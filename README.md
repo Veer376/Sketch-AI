@@ -1,5 +1,6 @@
 # Sketch AI Project
-Website: https://ai-notes-topaz-one.vercel.app (Please wait for seconds for the cold start, looking forward to deploy it as the serverless, or use kubernetes if possible).
+
+Website: https://ai-notes-topaz-one.vercel.app (Please wait for seconds for the cold start)
 
 This project is a sketch-based interface for writing, drawing, and efficiently representing user queries. It integrates the Gemini LLM to process and run these queries, enhancing the user experience with AI-powered analysis. By combining sketching capabilities with language understanding, this application allows users to express complex mathematical concepts like integration or textual queries in a visual manner and receive results that leverage AI.
 
