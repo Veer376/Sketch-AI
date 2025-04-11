@@ -6,15 +6,24 @@ interface EraserSubToolbarProps {
   size: number;
   onSizeChange: (size: number) => void;
   onHoverChange: (isHovered: boolean) => void;
+  parentPosition: { x: number; y: number };
+  parentWidth: number;
+  snapSide: 'left' | 'right';
+  toolButtonY: number;
 }
 
 const EraserSubToolbar: React.FC<EraserSubToolbarProps> = ({
   isVisible,
   size,
   onSizeChange,
-  onHoverChange
+  onHoverChange,
+  parentPosition,
+  parentWidth,
+  snapSide,
+  toolButtonY,
 }) => {
   const theme = getCurrentTheme();
+  const estimatedWidth = 150;
 
   if (!isVisible) {
     return null;
@@ -24,22 +33,25 @@ const EraserSubToolbar: React.FC<EraserSubToolbarProps> = ({
     onSizeChange(parseInt(e.target.value, 10));
   };
 
+  const subToolbarStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: `${toolButtonY}px`,
+    left: snapSide === 'left' 
+      ? `${parentPosition.x + parentWidth + 10}px`
+      : `${parentPosition.x - estimatedWidth - 10}px`,
+    backgroundColor: theme.toolbar,
+    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+    borderRadius: '8px',
+    padding: '12px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    zIndex: 9,
+  };
+
   return (
     <div
-      style={{
-        position: 'absolute',
-        top: '50%',
-        left: '55px', // Position next to the toolbar
-        transform: 'translateY(-50%)',
-        backgroundColor: theme.toolbar,
-        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
-        borderRadius: '8px',
-        padding: '12px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '10px',
-        zIndex: 9, // Below main toolbar but above canvas
-      }}
+      style={subToolbarStyle}
       onMouseEnter={() => onHoverChange(true)}
       onMouseLeave={() => onHoverChange(false)}
     >
@@ -52,7 +64,7 @@ const EraserSubToolbar: React.FC<EraserSubToolbarProps> = ({
           value={size}
           onChange={handleSizeChange}
           style={{
-            width: '100px', // Match PencilSubToolbar
+            width: '100px',
             accentColor: theme.toolbarButtonSelected,
             padding: '5px',
           }}

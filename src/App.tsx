@@ -109,12 +109,23 @@ function App() {
     const container = stage.container();
 
     if (selectedTool === 'pencil') {
-      container.style.cursor = `url('${generatePencilCursor(selectedColor)}') 0 24, auto`;
-    } else if (selectedTool === 'eraser') {
-      const eraserCursor = `data:image/svg+xml;base64,${btoa(
-        `<svg xmlns='http://www.w3.org/2000/svg' width='${eraserSize}' height='${eraserSize}' viewBox='0 0 ${eraserSize} ${eraserSize}'><circle cx='${eraserSize / 2}' cy='${eraserSize / 2}' r='${eraserSize / 2}' fill='none' stroke='black' stroke-width='2'/></svg>`
+      const pencilCursor = `data:image/svg+xml;base64,${btoa(
+        `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'>
+          <path d='M19.3 8.925L15.05 4.675L16.45 3.275C17.05 2.675 17.834 2.375 18.8 2.375C19.767 2.375 20.55 2.675 21.15 3.275L22.725 4.85C23.325 5.45 23.625 6.234 23.625 7.2C23.625 8.167 23.325 8.95 22.725 9.55L21.325 10.95L19.3 8.925ZM17.875 10.35L8.675 19.55C8.175 20.05 7.584 20.42 6.9 20.662C6.217 20.904 5.517 21.025 4.8 21.025H3.975C3.708 21.025 3.487 20.937 3.312 20.762C3.137 20.587 3.05 20.367 3.05 20.1V19.275C3.05 18.559 3.172 17.859 3.415 17.175C3.657 16.492 4.025 15.9 4.525 15.4L13.725 6.2L17.875 10.35Z' fill='${selectedColor}'/>
+        </svg>`
       )}`;
-      container.style.cursor = `url('${eraserCursor}') ${eraserSize / 2} ${eraserSize / 2}, auto`;
+      container.style.cursor = `url('${pencilCursor}') 0 24, auto`;
+    } else if (selectedTool === 'eraser') {
+      // Adjust SVG dimensions to accommodate stroke width
+      const svgSize = eraserSize + 2;
+      const radius = eraserSize / 2;
+      const center = svgSize / 2;
+
+      const eraserCursor = `data:image/svg+xml;base64,${btoa(
+        `<svg xmlns='http://www.w3.org/2000/svg' width='${svgSize}' height='${svgSize}' viewBox='0 0 ${svgSize} ${svgSize}'><circle cx='${center}' cy='${center}' r='${radius}' fill='lightgray' stroke='black' stroke-width='2'/></svg>`
+      )}`;
+      // Adjust hotspot to the center of the enlarged SVG
+      container.style.cursor = `url('${eraserCursor}') ${center} ${center}, auto`;
     } else {
       container.style.cursor = 'default';
     }
@@ -232,10 +243,16 @@ function App() {
     if (selectedTool === 'pencil') {
       stage.container().style.cursor = `url('${generatePencilCursor(selectedColor)}') 0 24, auto`;
     } else if (selectedTool === 'eraser') {
+      // Adjust SVG dimensions to accommodate stroke width
+      const svgSize = eraserSize + 2;
+      const radius = eraserSize / 2;
+      const center = svgSize / 2;
+
       const eraserCursor = `data:image/svg+xml;base64,${btoa(
-        `<svg xmlns='http://www.w3.org/2000/svg' width='${eraserSize}' height='${eraserSize}' viewBox='0 0 ${eraserSize} ${eraserSize}'><circle cx='${eraserSize / 2}' cy='${eraserSize / 2}' r='${eraserSize / 2}' fill='none' stroke='black' stroke-width='2'/></svg>`
+        `<svg xmlns='http://www.w3.org/2000/svg' width='${svgSize}' height='${svgSize}' viewBox='0 0 ${svgSize} ${svgSize}'><circle cx='${center}' cy='${center}' r='${radius}' fill='lightgray' stroke='black' stroke-width='2'/></svg>`
       )}`;
-      stage.container().style.cursor = `url('${eraserCursor}') ${eraserSize / 2} ${eraserSize / 2}, auto`;
+      // Adjust hotspot to the center of the enlarged SVG
+      stage.container().style.cursor = `url('${eraserCursor}') ${center} ${center}, auto`;
     } else {
       stage.container().style.cursor = 'default';
     }
@@ -324,6 +341,15 @@ function App() {
     );
   };
 
+  // Add the handleResetCanvas function here
+  const handleResetCanvas = () => {
+    setLines([]); // Clear all drawings
+    // Optionally, reset history if you want a clean slate
+    // setHistory([]);
+    // setHistoryIndex(-1);
+    handleCenterCanvas(); // Center the canvas
+  };
+
   const renderLines = () => {
     return lines.map((line, i) => (
       <Line
@@ -355,7 +381,6 @@ function App() {
       }}
     >
       <ToolbarContainer
-        style={{ cursor: 'default' }}
         selectedTool={selectedTool}
         onToolSelect={handleToolSelect}
         toolManager={toolManager.current}
@@ -369,6 +394,7 @@ function App() {
         canUndo={historyIndex >= 0}
         canRedo={historyIndex < history.length - 1}
         onCenterCanvas={handleCenterCanvas} // Add the center canvas handler
+        onResetCanvas={handleResetCanvas} // Pass the reset canvas handler
         gridType={gridType}
         onGridTypeChange={setGridType}
       />

@@ -8,6 +8,10 @@ interface GridSubToolbarProps {
   selectedType: GridType;
   onTypeChange: (type: GridType) => void;
   onHoverChange: (isHovered: boolean) => void;
+  parentPosition: { x: number; y: number };
+  parentWidth: number;
+  snapSide: 'left' | 'right';
+  toolButtonY: number;
 }
 
 // SVG icon for dot grid
@@ -42,8 +46,13 @@ const GridSubToolbar: React.FC<GridSubToolbarProps> = ({
   selectedType,
   onTypeChange,
   onHoverChange,
+  parentPosition,
+  parentWidth,
+  snapSide,
+  toolButtonY,
 }) => {
   const theme = getCurrentTheme();
+  const estimatedWidth = 140;
 
   if (!isVisible) return null;
 
@@ -62,23 +71,26 @@ const GridSubToolbar: React.FC<GridSubToolbarProps> = ({
     transition: 'all 0.2s ease',
   });
 
+  const subToolbarStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: `${toolButtonY}px`,
+    left: snapSide === 'left' 
+      ? `${parentPosition.x + parentWidth + 10}px`
+      : `${parentPosition.x - estimatedWidth - 10}px`,
+    backgroundColor: theme.toolbar,
+    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+    padding: '15px',
+    borderRadius: '8px',
+    zIndex: 9,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '15px',
+    minWidth: '120px',
+  };
+
   return (
     <div
-      style={{
-        position: 'absolute',
-        top: '50%',
-        left: '70px',
-        transform: 'translateY(-50%)',
-        backgroundColor: theme.toolbar,
-        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
-        padding: '15px',
-        borderRadius: '8px',
-        zIndex: 10,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '15px',
-        minWidth: '120px',
-      }}
+      style={subToolbarStyle}
       onMouseEnter={() => onHoverChange(true)}
       onMouseLeave={() => onHoverChange(false)}
     >

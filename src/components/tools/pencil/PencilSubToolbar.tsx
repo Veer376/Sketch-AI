@@ -8,6 +8,11 @@ export interface PencilSubToolbarProps {
   onHoverChange?: (isHovered: boolean) => void;
   selectedColor: string; // Use selectedColor from parent
   onColorChange: (color: string) => void; // Callback to update color in parent
+  // Add new props for positioning
+  parentPosition: { x: number; y: number };
+  parentWidth: number;
+  snapSide: 'left' | 'right';
+  toolButtonY: number; // Add prop for specific tool Y
 }
 
 const PencilSubToolbar: React.FC<PencilSubToolbarProps> = ({ 
@@ -16,7 +21,12 @@ const PencilSubToolbar: React.FC<PencilSubToolbarProps> = ({
   onThicknessChange,
   onHoverChange,
   selectedColor, // Receive from parent
-  onColorChange // Receive from parent
+  onColorChange, // Receive from parent
+  // Destructure new props
+  parentPosition,
+  parentWidth,
+  snapSide,
+  toolButtonY, // Destructure new prop
 }) => {
   const theme = getCurrentTheme();
   const [isThicknessHovered, setIsThicknessHovered] = useState(false);
@@ -43,23 +53,28 @@ const PencilSubToolbar: React.FC<PencilSubToolbarProps> = ({
     // No need to call onThicknessChange here for color
   };
   
+  // Calculate dynamic position based on parent
+  const subToolbarStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: `${toolButtonY}px`, // Use the specific tool button Y position
+    left: snapSide === 'left' 
+      ? `${parentPosition.x + parentWidth + 10}px` // Position to the right of parent
+      : `${parentPosition.x - 210}px`, // Position to the left (approx width 200px + 10 padding)
+    // transform: 'translateY(-50%)', // Remove Y transform as top is now absolute
+    backgroundColor: theme.toolbar,
+    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+    padding: '15px',
+    borderRadius: '8px',
+    zIndex: 9, // Keep below main toolbar if overlapping temporarily
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '15px',
+    minWidth: '200px',
+  };
+  
   return (
     <div
-      style={{
-        position: 'absolute',
-        top: '50%',
-        left: '70px',
-        transform: 'translateY(-50%)',
-        backgroundColor: theme.toolbar,
-        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
-        padding: '15px',
-        borderRadius: '8px',
-        zIndex: 10,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '15px',
-        minWidth: '200px',
-      }}
+      style={subToolbarStyle} // Apply dynamic style
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
