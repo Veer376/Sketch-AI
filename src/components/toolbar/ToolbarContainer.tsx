@@ -1,22 +1,34 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getCurrentTheme } from '../../utils/theme';
-import { Tool } from '../Toolbar';
 import PencilTool from '../tools/pencil/PencilTool';
 import PencilSubToolbar from '../tools/pencil/PencilSubToolbar';
+import EraserTool from '../tools/eraser/EraserTool';
+import UndoButton from '../tools/history/UndoButton';
+import RedoButton from '../tools/history/RedoButton';
 import ToolManager from '../tools/ToolManager';
+
+export type Tool = 'pencil' | 'eraser' | null;
 
 interface ToolbarContainerProps {
   selectedTool: Tool;
   onToolSelect: (tool: Tool) => void;
   toolManager?: ToolManager;
   onPencilOptionsChange?: (options: { thickness: number }) => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  canUndo?: boolean;
+  canRedo?: boolean;
 }
 
 const ToolbarContainer: React.FC<ToolbarContainerProps> = ({ 
   selectedTool, 
   onToolSelect,
   toolManager = new ToolManager(),
-  onPencilOptionsChange
+  onPencilOptionsChange,
+  onUndo,
+  onRedo,
+  canUndo = false,
+  canRedo = false
 }) => {
   const theme = getCurrentTheme();
   const [pencilThickness, setPencilThickness] = useState(2);
@@ -122,14 +134,40 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
           gap: '10px',
         }}
       >
-        {/* Pencil Tool */}
+        {/* Drawing Tools */}
         <PencilTool 
           isSelected={selectedTool === 'pencil'} 
           onSelect={() => toggleTool('pencil')} 
           onHoverChange={handlePencilHoverChange}
         />
         
-        {/* More tools will be added here */}
+        <EraserTool 
+          isSelected={selectedTool === 'eraser'} 
+          onSelect={() => toggleTool('eraser')} 
+          onHoverChange={() => {}}
+        />
+        
+        {/* Divider */}
+        <div 
+          style={{
+            width: '80%',
+            height: '1px',
+            backgroundColor: theme.toolbarButtonText,
+            opacity: 0.2,
+            margin: '5px auto',
+          }}
+        />
+        
+        {/* History Tools */}
+        <UndoButton 
+          onClick={onUndo || (() => {})} 
+          disabled={!canUndo}
+        />
+        
+        <RedoButton 
+          onClick={onRedo || (() => {})} 
+          disabled={!canRedo}
+        />
       </div>
 
       {/* Tool-specific Subtoolbars */}
