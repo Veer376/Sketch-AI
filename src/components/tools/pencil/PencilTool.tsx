@@ -43,7 +43,7 @@ const PencilTool: React.FC<PencilToolProps> = ({
   return (
     <button
       ref={buttonRef}
-      title="Pencil Tool"
+      title="Pen"
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}

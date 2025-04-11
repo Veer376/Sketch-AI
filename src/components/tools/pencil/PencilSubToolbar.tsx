@@ -1,5 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { getCurrentTheme } from '../../../utils/theme';
+import DiscreteSliderControl from '../../shared/DiscreteSliderControl';
+
+// --- Icons --- (Define simple SVG icons here or import)
+const EditIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>;
+const SaveIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>;
+const DeleteIcon = () => <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>;
+const ConfirmIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>;
+const CancelIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>;
+const PaletteIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+  </svg>
+);
+// --- End Icons ---
 
 export interface PencilSubToolbarProps {
   isVisible: boolean;
@@ -29,9 +43,15 @@ const PencilSubToolbar: React.FC<PencilSubToolbarProps> = ({
   toolButtonY, // Destructure new prop
 }) => {
   const theme = getCurrentTheme();
-  const [isThicknessHovered, setIsThicknessHovered] = useState(false);
-  // Removed local color state and color adding logic as it's now fixed
   
+  // --- State for Colors ---
+  const [availableColors, setAvailableColors] = useState<string[]>(['#FF0000', '#0000FF']); // Start with hex red, black, blue
+  const colorInputRef = useRef<HTMLInputElement>(null);
+  const maxColors = 6;
+  const [isColorEditMode, setIsColorEditMode] = useState(false); // State for edit mode
+  const [pendingColor, setPendingColor] = useState<string | null>(null); // State for pending color
+  // --- End State for Colors ---
+
   if (!isVisible) return null;
   
   const handleMouseEnter = () => {
@@ -42,17 +62,58 @@ const PencilSubToolbar: React.FC<PencilSubToolbarProps> = ({
     onHoverChange?.(false);
   };
   
-  const handleThicknessChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newThickness = parseFloat(e.target.value);
-    onThicknessChange?.(newThickness); // Only pass thickness
+  const handleThicknessChange = (newThickness: number) => {
+    onThicknessChange?.(newThickness);
   };
 
   // Call the parent's color change handler
   const handleColorSelect = (color: string) => {
-    onColorChange(color); // Update color via callback to App.tsx
-    // No need to call onThicknessChange here for color
+    if (!isColorEditMode) { // Only select if not in edit mode
+       onColorChange(color);
+    }
   };
   
+  // --- Handlers for adding color ---
+  const handleAddColorClick = () => {
+    setPendingColor(null); // Reset any previous pending color
+    colorInputRef.current?.click(); // Trigger the hidden color input
+  };
+
+  // Set pending color when input changes
+  const handleColorInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setPendingColor(event.target.value);
+  };
+
+  // Confirm adding the pending color
+  const handleConfirmAddColor = () => {
+    if (pendingColor && availableColors.length < maxColors && !availableColors.includes(pendingColor)) {
+      setAvailableColors(prevColors => [...prevColors, pendingColor]);
+    }
+    setPendingColor(null); // Reset pending color
+  };
+
+  // Cancel adding the pending color
+  const handleCancelAddColor = () => {
+    setPendingColor(null); // Reset pending color
+  };
+
+  // --- Handler for Deleting Color ---
+  const handleDeleteColor = (colorToDelete: string) => {
+    const newColors = availableColors.filter(color => color !== colorToDelete);
+    setAvailableColors(newColors);
+    // If the deleted color was selected, select the first remaining one
+    if (selectedColor === colorToDelete) {
+      onColorChange(newColors.length > 0 ? newColors[0] : '#000000'); // Default to black if none left
+    }
+  };
+  // --- End Delete Handler ---
+
+  // --- Handler for Edit/Save Button ---
+  const toggleEditMode = () => {
+      setIsColorEditMode(!isColorEditMode);
+  };
+  // --- End Edit/Save Handler ---
+
   // Calculate dynamic position based on parent
   const subToolbarStyle: React.CSSProperties = {
     position: 'absolute',
@@ -79,105 +140,145 @@ const PencilSubToolbar: React.FC<PencilSubToolbarProps> = ({
       onMouseLeave={handleMouseLeave}
     >
       <div style={{ padding: '5px', textAlign: 'center', color: theme.toolbarText, fontWeight: 'bold' }}>
-        Pencil Options
+        Pen
       </div>
       
       {/* Thickness Control */}
-      <div 
-        style={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          gap: '8px',
-          position: 'relative',
-        }}
-        onMouseEnter={() => setIsThicknessHovered(true)}
-        onMouseLeave={() => setIsThicknessHovered(false)}
-      >
-        <label 
-          htmlFor="thickness-slider" 
-          style={{ 
-            color: theme.toolbarText,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}
-        >
-          <span>Thickness:</span>
-          <span style={{ 
-            minWidth: '30px', 
-            backgroundColor: theme.toolbarButton,
-            padding: '2px 6px',
-            borderRadius: '4px',
-            textAlign: 'center'
-          }}>
-            {thickness}px
-          </span>
-        </label>
-        <input
-          id="thickness-slider"
-          type="range"
-          min="1"
-          max="20"
-          step="1"
-          value={thickness}
-          onChange={handleThicknessChange}
-          style={{
-            width: '100px', // Match EraserSubToolbar
-            accentColor: theme.toolbarButtonSelected,
-            padding: '5px',
-          }}
-        />
-        
-        {/* Preview of thickness when hovered */}
-        {isThicknessHovered && (
-          <div style={{
-            position: 'absolute',
-            top: '-45px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            backgroundColor: theme.toolbar,
-            borderRadius: '4px',
-            padding: '6px 10px',
-            boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '5px',
-            zIndex: 11,
-          }}>
-            <div style={{
-              width: `${thickness * 2}px`,
-              height: `${thickness}px`,
-              backgroundColor: theme.foreground,
-              borderRadius: '50px',
-            }}></div>
-            <span style={{ color: theme.toolbarText, fontSize: '12px' }}>
-              {thickness}px
-            </span>
-          </div>
-        )}
-      </div>
+      <DiscreteSliderControl
+        label="Thickness"
+        value={thickness}
+        min={0.5}
+        max={20}
+        step={1}
+        onChange={handleThicknessChange}
+        unit=" px"
+        marks={true}
+      />
 
-      {/* Color Selection - Simplified to use props */}
+      {/* Color Selection Area */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <label style={{ color: theme.toolbarText, fontWeight: 'bold' }}>Colors:</label>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          {['red', 'black', 'blue'].map((color, index) => (
-            <div key={index} style={{ position: 'relative' }}>
-              <div
-                onClick={() => handleColorSelect(color)} // Call the correct handler
+         {/* Colors Label and Edit/Save Button Row */}
+         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+            <label style={{ color: theme.toolbarText, fontWeight: 'bold' }}>Colors:</label>
+            {/* Edit/Save Button */} 
+            {availableColors.length === maxColors && !isColorEditMode && (
+                <button onClick={toggleEditMode} title="Edit Colors" style={{ background: 'none', border: 'none', cursor: 'pointer', color: theme.toolbarText}}><EditIcon /></button>
+            )}
+            {isColorEditMode && (
+                 <button onClick={toggleEditMode} title="Save Colors" style={{ background: 'none', border: 'none', cursor: 'pointer', color: theme.primary || 'dodgerblue'}}><SaveIcon /></button>
+            )}
+         </div>
+
+         {/* Row for Existing Colors */}
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          {availableColors.map((color) => (
+            <div key={color} style={{ position: 'relative' }}> 
+              <div 
+                onClick={() => handleColorSelect(color)} 
+                title={color}
                 style={{
-                  width: '32px',
-                  height: '32px',
+                  width: '30px',
+                  height: '30px',
                   backgroundColor: color,
                   borderRadius: '50%',
-                  border: selectedColor === color ? `3px solid ${theme.primary}` : '2px solid white', // Use selectedColor prop
-                  boxShadow: '0 0 4px rgba(0, 0, 0, 0.2)',
-                  cursor: 'pointer',
+                  border: selectedColor === color && !isColorEditMode ? `3px solid ${theme.primary || 'dodgerblue'}` : '2px solid rgba(255,255,255,0.5)',
+                  cursor: isColorEditMode ? 'default' : 'pointer', // No pointer in edit mode
+                  transition: 'border 0.1s ease-in-out',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
                 }}
               ></div>
+              {/* Delete Button Overlay */} 
+              {isColorEditMode && (
+                <button
+                  onClick={() => handleDeleteColor(color)}
+                  title={`Delete ${color}`}
+                  style={{
+                      position: 'absolute',
+                      top: '-5px',
+                      right: '-5px',
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '50%',
+                      border: '1px solid white',
+                      backgroundColor: 'rgba(40, 40, 40, 0.8)',
+                      color: 'white',
+                      cursor: 'pointer',
+                      fontSize: '10px',
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      padding: 0,
+                      lineHeight: '1',
+                      zIndex: 1, // Ensure it's above the color circle
+                  }}
+                >
+                    <DeleteIcon />
+                </button>
+              )}
             </div>
           ))}
+          
+          {/* Section for Adding New Color */}
+          <div style={{ marginTop: '10px', minHeight: '50px', display: 'flex', alignItems: 'center' }}>
+            {!isColorEditMode && (
+              <>
+               {!pendingColor && availableColors.length < maxColors && (
+                  <button 
+                    onClick={handleAddColorClick} 
+                    title="Add Color" 
+                    style={{
+                        width: '34px', height: '34px', borderRadius: '50%',
+                        border: `2px dashed ${theme.toolbarButtonText || 'gray'}`,
+                        backgroundColor: 'transparent',
+                        color: theme.toolbarButtonText || 'gray',
+                        cursor: 'pointer', display: 'flex',
+                        justifyContent: 'center', alignItems: 'center', padding: 0
+                    }}>
+                      <PaletteIcon /> 
+                    </button>
+               )}
+               
+               {pendingColor && (
+                   <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '8px', // Increased gap
+                      border: `1px solid ${theme.toolbarButtonText || '#aaa'}`, 
+                      padding: '6px 10px', // Increased padding
+                      borderRadius: '22px' // Adjusted border radius
+                   }}>
+                      {/* Pending Color Preview (Larger) */}
+                      <div style={{
+                          width: '36px', height: '36px', // Increased size
+                          borderRadius: '50%',
+                          backgroundColor: pendingColor, 
+                          border: '1px solid white'
+                      }}></div>
+                      {/* Confirm Button (Slightly larger container maybe) */}
+                      <button onClick={handleConfirmAddColor} title="Confirm Color" style={{ background:'none', border:'none', cursor:'pointer', color: 'limegreen', padding: '2px'}}><ConfirmIcon /></button>
+                      {/* Cancel Button (Slightly larger container maybe) */}
+                      <button onClick={handleCancelAddColor} title="Cancel" style={{ background:'none', border:'none', cursor:'pointer', color: 'tomato', padding: '2px' }}><CancelIcon /></button>
+                  </div>
+               )}
+              </>
+            )}
+            {/* Hidden Color Input - Moved inside this section for potential (minor) placement influence */}
+            <input 
+              type="color" 
+              ref={colorInputRef} 
+              onChange={handleColorInputChange} 
+              style={{ 
+                position: 'absolute', 
+                opacity: 0, 
+                pointerEvents: 'none', 
+                width: 0, height: 0,
+                border: 'none', padding: 0, margin: 0,
+                // Attempt to position near button - may have little effect
+                top: '5px', 
+                left: '5px', 
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>

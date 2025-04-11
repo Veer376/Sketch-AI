@@ -1,13 +1,13 @@
 import { useRef, useState, useEffect } from 'react';
 import { Stage, Layer, Line } from 'react-konva';
-import ToolbarContainer from './components/toolbar/ToolbarContainer';
-import { getCurrentTheme } from './utils/theme';
-import ToolManager from './components/tools/ToolManager';
-import { springAnimation } from './utils/animation';
-import DotGrid from './components/canvas/Grid';
-import LineGrid from './components/canvas/LineGrid';
-import { GridType } from './components/tools/grid/GridSubToolbar';
-import './App.css';
+import ToolbarContainer from '../toolbar/ToolbarContainer';
+import { getCurrentTheme } from '../../utils/theme';
+import ToolManager from '../tools/ToolManager';
+import { springAnimation } from '../../utils/animation';
+import DotGrid from './backgrounds/Grid';
+import LineGrid from './backgrounds/LineGrid';
+import { GridType } from '../tools/grid/GridSubToolbar';
+// import './App.css';
 
 // Define a type for the line objects
 interface LineType {
@@ -15,10 +15,6 @@ interface LineType {
   thickness: number;
   color: string; // Ensure color is part of the type
 }
-
-// Base64 encoded pencil cursor
-const PENCIL_CURSOR = `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE5LjMgOC45MjVMMTUuMDUgNC42NzVMMTYuNDUgMy4yNzVDMTcuMDUgMi42NzUgMTcuODM0IDIuMzc1IDE4LjggMi4zNzVDMTkuNzY3IDIuMzc1IDIwLjU1IDIuNjc1IDIxLjE1IDMuMjc1TDIyLjcyNSA0Ljg1QzIzLjMyNSA1LjQ1IDIzLjYyNSA2LjIzNCAyMy42MjUgNy4yQzIzLjYyNSA4LjE2NyAyMy4zMjUgOC45NSAyMi43MjUgOS41NUwyMS4zMjUgMTAuOTVMMTkuMyA4LjkyNVpNMTcuODc1IDEwLjM1TDguNjc1IDE5LjU1QzguMTc1IDIwLjA1IDcuNTg0IDIwLjQyIDYuOSAyMC42NjJDNi4yMTcgMjAuOTA0IDUuNTE3IDIxLjAyNSA0LjggMjEuMDI1SDMuOTc1QzMuNzA4IDIxLjAyNSAzLjQ4NyAyMC45MzcgMy4zMTIgMjAuNzYyQzMuMTM3IDIwLjU4NyAzLjA1IDIwLjM2NyAzLjA1IDIwLjFWMTkuMjc1QzMuMDUgMTguNTU5IDMuMTcyIDE3Ljg1OSAzLjQxNSAxNy4xNzVDMy42NTcgMTYuNDkyIDQuMDI1IDE1LjkgNC41MjUgMTUuNEwxMy43MjUgNi4yTDE3Ljg3NSAxMC4zNVoiIGZpbGw9ImJsYWNrIi8+Cjwvc3ZnPgo=`;
-const ERASER_CURSOR = `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE1LjUgMTZsMy41LTMuNS00LjUtNC41LTcgNyAxLjUgMS41IiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJNMTMgMThIMjEiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRoIGQ9Ik03LjUgMTVMMyAxMC41IDEwLjUgMyAxOCAxMC41IiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K`;
 
 // Create a function to generate a colored pencil cursor
 const generatePencilCursor = (color: string) => {

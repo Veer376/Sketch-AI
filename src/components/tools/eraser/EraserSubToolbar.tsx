@@ -1,5 +1,6 @@
 import React from 'react';
 import { getCurrentTheme } from '../../../utils/theme';
+import DiscreteSliderControl from '../../shared/DiscreteSliderControl';
 
 interface EraserSubToolbarProps {
   isVisible: boolean;
@@ -29,8 +30,8 @@ const EraserSubToolbar: React.FC<EraserSubToolbarProps> = ({
     return null;
   }
 
-  const handleSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onSizeChange(parseInt(e.target.value, 10));
+  const handleSizeChange = (newSize: number) => {
+    onSizeChange(newSize);
   };
 
   const subToolbarStyle: React.CSSProperties = {
@@ -55,22 +56,17 @@ const EraserSubToolbar: React.FC<EraserSubToolbarProps> = ({
       onMouseEnter={() => onHoverChange(true)}
       onMouseLeave={() => onHoverChange(false)}
     >
-      <h3 style={{ margin: '0 0 8px', color: theme.toolbarButtonText, fontSize: '14px' }}>Eraser Options</h3>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <input
-          type="range"
-          min="1"
-          max="50"
-          value={size}
-          onChange={handleSizeChange}
-          style={{
-            width: '100px',
-            accentColor: theme.toolbarButtonSelected,
-            padding: '5px',
-          }}
-        />
-        <span style={{ color: theme.toolbarButtonText, fontSize: '12px' }}>{size}px</span>
-      </div>
+      <h3 style={{ margin: '0 0 8px', color: theme.toolbarButtonText, fontSize: '14px' }}> Eraser </h3>
+      <DiscreteSliderControl
+        label="Size"
+        value={size}
+        min={1}
+        max={50}
+        step={3}
+        onChange={handleSizeChange}
+        unit="px"
+        marks={true}
+      />
     </div>
   );
 };
