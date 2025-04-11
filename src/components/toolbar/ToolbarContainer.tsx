@@ -11,7 +11,7 @@ import GridSubToolbar, { GridType } from '../tools/grid/GridSubToolbar'; // Impo
 import ToolManager from '../tools/ToolManager';
 import CenterButton from '../tools/navigation/CenterButton'; // Import CenterButton
 
-export type Tool = 'pencil' | 'eraser' | 'grid' | null; // Add 'grid' to Tool type
+export type Tool = 'pencil' | 'eraser' | 'grid' | null; // Remove 'text' from Tool type
 
 interface ToolbarContainerProps {
   selectedTool: Tool;
@@ -20,6 +20,8 @@ interface ToolbarContainerProps {
   onPencilOptionsChange?: (options: { thickness: number }) => void;
   selectedColor: string; // Add selectedColor prop
   onColorChange: (color: string) => void; // Add onColorChange prop
+  eraserSize: number; // Add eraserSize prop
+  onEraserSizeChange: (size: number) => void; // Add onEraserSizeChange prop
   onUndo?: () => void;
   onRedo?: () => void;
   canUndo?: boolean;
@@ -36,6 +38,8 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
   onPencilOptionsChange,
   selectedColor, // Receive selectedColor
   onColorChange, // Receive onColorChange
+  eraserSize, // Receive eraserSize
+  onEraserSizeChange, // Receive onEraserSizeChange
   onUndo,
   onRedo,
   canUndo = false,
@@ -48,7 +52,6 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
   const [pencilThickness, setPencilThickness] = useState(2);
   const [isPencilHovered, setIsPencilHovered] = useState(false);
   const [isPencilSubToolbarHovered, setIsPencilSubToolbarHovered] = useState(false);
-  const [eraserSize, setEraserSize] = useState(10); // Add eraser size state
   const [isEraserHovered, setIsEraserHovered] = useState(false); // Add eraser hover state
   const [isEraserSubToolbarHovered, setIsEraserSubToolbarHovered] = useState(false); // Add eraser subtoolbar hover state
   const [isGridHovered, setIsGridHovered] = useState(false); // Add grid hover state
@@ -77,9 +80,9 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
     }
   };
 
-  const handleEraserSizeChange = (size: number) => { // Add eraser size handler
-    setEraserSize(size);
-    toolManager.updateToolOption('eraser', 'size', size);
+  const handleEraserSizeChange = (size: number) => { 
+    toolManager.updateToolOption('eraser', 'size', size); 
+    onEraserSizeChange(size); // Call the prop function passed from App
   };
   
   // Handle pencil hover state changes
@@ -192,16 +195,17 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
     (selectedTool === 'grid' && isGridSubToolbarHovered);
   
   // Initialize with tool manager's default values if available
-  useEffect(() => {
+  /* useEffect(() => {
     const pencilOptions = toolManager.getToolOptions<{ thickness: number }>('pencil');
     if (pencilOptions?.thickness && pencilOptions.thickness !== pencilThickness) {
       setPencilThickness(pencilOptions.thickness);
     }
-    const eraserOptions = toolManager.getToolOptions<{ size: number }>('eraser'); // Add eraser options initialization
-    if (eraserOptions?.size && eraserOptions.size !== eraserSize) {
-      setEraserSize(eraserOptions.size);
-    }
-  }, [toolManager]);
+    // Remove eraser initialization as it's now handled by App.tsx
+    // const eraserOptions = toolManager.getToolOptions<{ size: number }>('eraser');
+    // if (eraserOptions?.size && eraserOptions.size !== eraserSize) {
+    //   setEraserSize(eraserOptions.size);
+    // }
+  }, [toolManager]); */
   
   // Clean up timeouts on unmount
   useEffect(() => {
@@ -256,7 +260,8 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
         <EraserTool 
           isSelected={selectedTool === 'eraser'} 
           onSelect={() => toggleTool('eraser')} 
-          onHoverChange={handleEraserHoverChange}
+          onHoverChange={handleEraserHoverChange} 
+          size={eraserSize} // Added missing size property
         />
 
         <GridTool // Add GridTool
@@ -316,8 +321,8 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
 
       <EraserSubToolbar // Render EraserSubToolbar
         isVisible={shouldShowEraserSubToolbar}
-        size={eraserSize}
-        onSizeChange={handleEraserSizeChange}
+        size={eraserSize} // Pass eraserSize down
+        onSizeChange={onEraserSizeChange} // Pass onEraserSizeChange down
         onHoverChange={handleEraserSubToolbarHoverChange}
       />
 

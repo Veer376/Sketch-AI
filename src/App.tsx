@@ -23,8 +23,7 @@ const ERASER_CURSOR = `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0
 // Create a function to generate a colored pencil cursor
 const generatePencilCursor = (color: string) => {
   return `data:image/svg+xml;base64,${btoa(`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M19.3 8.925L15.05 4.675L16.45 3.275C17.05 2.675 17.834 2.375 18.8 2.375C19.767 2.375 20.55 2.675 21.15 3.275L22.725 4.85C23.325 5.45 23.625 6.234 23.625 7.2C23.625 8.167 23.325 8.95 22.725 9.55L21.325 10.95L19.3 8.925ZM17.875 10.35L8.675 19.55C8.175 20.05 7.584 20.42 6.9 20.662C6.217 20.904 5.517 21.025 4.8 21.025H3.975C3.708 21.025 3.487 20.937 3.312 20.762C3.137 20.587 3.05 20.367 3.05 20.1V19.275C3.05 18.559 3.172 17.859 3.415 17.175C3.657 16.492 4.025 15.9 4.525 15.4L13.725 6.2L17.875 10.35Z" 
-    fill="${color}"/></svg>`)}`;
+    <path d="M19.3 8.925L15.05 4.675L16.45 3.275C17.05 2.675 17.834 2.375 18.8 2.375C19.767 2.375 20.55 2.675 21.15 3.275L22.725 4.85C23.325 5.45 23.625 6.234 23.625 7.2C23.625 8.167 23.325 8.95 22.725 9.55L21.325 10.95L19.3 8.925ZM17.875 10.35L8.675 19.55C8.175 20.05 7.584 20.42 6.9 20.662C6.217 20.904 5.517 21.025 4.8 21.025SDMuOTc1QzMuNzA4IDIxLjAyNSAzLjQ4NyAyMC45MzcgMy4zMTIgMjAuNzYyQzMuMTM3IDIwLjU4NyAzLjA1IDIwLjM2NyAzLjA1IDIwLjFWMTkuMjc1QzMuMDUgMTguNTU5IDMuMTcyIDE3Ljg1OSAzLjQxNSAxNy4xNzVDMy42NTcgMTYuNDkyIDQuMDI1IDE1LjkgNC41MjUgMTUuNEwxMy43MjUgNi4yTDE3Ljg3NSAxMC4zNVoiIGZpbGw9ImJsYWNrIi8+Cjwvc3ZnPgo=`)}`;
 };
 
 // Add initial state constants for positioning and scale
@@ -46,10 +45,12 @@ function App() {
   const [pencilThickness, setPencilThickness] = useState(2);
   const [selectedColor, setSelectedColor] = useState<string>('black'); // Default color black, managed here
   const [gridType, setGridType] = useState<GridType>('lines');
+  const [eraserSize, setEraserSize] = useState(10); // Add eraser size state here
   const theme = getCurrentTheme();
   const stageRef = useRef<any>(null);
   const toolManager = useRef(new ToolManager());
   const lastPointerPosition = useRef<{ x: number; y: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const handleToolSelect = (tool: 'pencil' | 'eraser' | 'grid' | null) => {
     setSelectedTool(tool);
@@ -86,14 +87,14 @@ function App() {
     }
   };
 
-  const findLineIntersection = (pointerPos: { x: number; y: number }) => {
+  const findLineIntersection = (pointerPos: { x: number; y: number }, eraserSize: number) => {
     for (let i = lines.length - 1; i >= 0; i--) {
       const line = lines[i];
       for (let j = 0; j < line.points.length; j += 2) {
         const x = line.points[j];
         const y = line.points[j + 1];
         const distance = Math.sqrt(Math.pow(pointerPos.x - x, 2) + Math.pow(pointerPos.y - y, 2));
-        if (distance < 10) {
+        if (distance < eraserSize) { // Use eraser size for intersection detection
           return i;
         }
       }
@@ -110,11 +111,14 @@ function App() {
     if (selectedTool === 'pencil') {
       container.style.cursor = `url('${generatePencilCursor(selectedColor)}') 0 24, auto`;
     } else if (selectedTool === 'eraser') {
-      container.style.cursor = `url('${ERASER_CURSOR}') 0 24, auto`;
+      const eraserCursor = `data:image/svg+xml;base64,${btoa(
+        `<svg xmlns='http://www.w3.org/2000/svg' width='${eraserSize}' height='${eraserSize}' viewBox='0 0 ${eraserSize} ${eraserSize}'><circle cx='${eraserSize / 2}' cy='${eraserSize / 2}' r='${eraserSize / 2}' fill='none' stroke='black' stroke-width='2'/></svg>`
+      )}`;
+      container.style.cursor = `url('${eraserCursor}') ${eraserSize / 2} ${eraserSize / 2}, auto`;
     } else {
       container.style.cursor = 'default';
     }
-  }, [selectedTool, selectedColor]);
+  }, [selectedTool, selectedColor, scale, eraserSize]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -131,7 +135,6 @@ function App() {
   const handleMouseDown = (e: any) => {
     if (!selectedTool) return;
 
-    isDrawing.current = true;
     const stage = e.target.getStage();
     const pointer = stage.getPointerPosition();
 
@@ -140,6 +143,7 @@ function App() {
       y: (pointer.y - stage.y()) / scale,
     };
 
+    isDrawing.current = true;
     lastPointerPosition.current = adjustedPointer;
 
     if (selectedTool === 'pencil') {
@@ -148,14 +152,16 @@ function App() {
           ...prevLines,
           {
             points: [adjustedPointer.x, adjustedPointer.y],
-            thickness: pencilThickness,
+            thickness: pencilThickness / scale, // Adjust thickness based on scale
             color: selectedColor, // Use the state variable directly
           },
         ];
         return newLines;
       });
     } else if (selectedTool === 'eraser') {
-      const lineIndex = findLineIntersection(adjustedPointer);
+      // Use eraserSize state adjusted for scale for intersection detection
+      const adjustedEraserSize = eraserSize / scale; 
+      const lineIndex = findLineIntersection(adjustedPointer, adjustedEraserSize);
 
       if (lineIndex !== -1) {
         setLines((prevLines) => {
@@ -172,8 +178,6 @@ function App() {
   };
 
   const handleMouseMove = (e: any) => {
-    if (!isDrawing.current || !selectedTool) return;
-
     const stage = e.target.getStage();
     const pointer = stage.getPointerPosition();
 
@@ -182,7 +186,7 @@ function App() {
       y: (pointer.y - stage.y()) / scale,
     };
 
-    if (selectedTool === 'pencil') {
+    if (isDrawing.current && selectedTool === 'pencil') {
       setLines((prev) => {
         const currentLine = prev[prev.length - 1];
         if (!currentLine) return prev;
@@ -190,11 +194,14 @@ function App() {
         const newLine = {
           ...currentLine,
           points: [...currentLine.points, adjustedPointer.x, adjustedPointer.y],
+          thickness: pencilThickness / scale, // Adjust thickness dynamically
         };
         return [...prev.slice(0, -1), newLine];
       });
-    } else if (selectedTool === 'eraser') {
-      const lineIndex = findLineIntersection(adjustedPointer);
+    } else if (isDrawing.current && selectedTool === 'eraser') {
+      // Use eraserSize state adjusted for scale for intersection detection
+      const adjustedEraserSize = eraserSize / scale; 
+      const lineIndex = findLineIntersection(adjustedPointer, adjustedEraserSize);
 
       if (lineIndex !== -1) {
         setLines((prevLines) => {
@@ -209,11 +216,8 @@ function App() {
   };
 
   const handleMouseUp = () => {
-    if (!isDrawing.current || !selectedTool) return;
-
-    isDrawing.current = false;
-
-    if (selectedTool === 'pencil') {
+    if (isDrawing.current && selectedTool === 'pencil') {
+      isDrawing.current = false;
       saveToHistory([...lines]);
     }
   };
@@ -228,7 +232,10 @@ function App() {
     if (selectedTool === 'pencil') {
       stage.container().style.cursor = `url('${generatePencilCursor(selectedColor)}') 0 24, auto`;
     } else if (selectedTool === 'eraser') {
-      stage.container().style.cursor = `url('${ERASER_CURSOR}') 0 24, auto`;
+      const eraserCursor = `data:image/svg+xml;base64,${btoa(
+        `<svg xmlns='http://www.w3.org/2000/svg' width='${eraserSize}' height='${eraserSize}' viewBox='0 0 ${eraserSize} ${eraserSize}'><circle cx='${eraserSize / 2}' cy='${eraserSize / 2}' r='${eraserSize / 2}' fill='none' stroke='black' stroke-width='2'/></svg>`
+      )}`;
+      stage.container().style.cursor = `url('${eraserCursor}') ${eraserSize / 2} ${eraserSize / 2}, auto`;
     } else {
       stage.container().style.cursor = 'default';
     }
@@ -317,8 +324,23 @@ function App() {
     );
   };
 
+  const renderLines = () => {
+    return lines.map((line, i) => (
+      <Line
+        key={i}
+        points={line.points}
+        stroke={line.color} // Use the color stored in the line object
+        strokeWidth={line.thickness} // Use the dynamically adjusted thickness
+        tension={0.5}
+        lineCap="round"
+        lineJoin="round"
+      />
+    ));
+  };
+
   return (
     <div
+      ref={containerRef}
       style={{
         position: 'fixed',
         top: 0,
@@ -333,12 +355,15 @@ function App() {
       }}
     >
       <ToolbarContainer
+        style={{ cursor: 'default' }}
         selectedTool={selectedTool}
         onToolSelect={handleToolSelect}
         toolManager={toolManager.current}
         onPencilOptionsChange={handlePencilOptionsChange} // Only thickness needed now
         selectedColor={selectedColor} // Pass down the color state
         onColorChange={setSelectedColor} // Pass down the state setter
+        eraserSize={eraserSize} // Pass eraserSize state
+        onEraserSizeChange={setEraserSize} // Pass eraserSize setter
         onUndo={handleUndo}
         onRedo={handleRedo}
         canUndo={historyIndex >= 0}
@@ -391,19 +416,7 @@ function App() {
                 />
               )}
             </Layer>
-            <Layer>
-              {lines.map((line, i) => (
-                <Line
-                  key={i}
-                  points={line.points}
-                  stroke={line.color} // Use the color stored in the line object
-                  strokeWidth={(line.thickness || 2) / scale}
-                  tension={0.5}
-                  lineCap="round"
-                  lineJoin="round"
-                />
-              ))}
-            </Layer>
+            <Layer>{renderLines()}</Layer>
           </Stage>
         </div>
       </div>

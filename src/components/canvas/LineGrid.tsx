@@ -12,7 +12,7 @@ interface LineGridProps {
 const LineGrid: React.FC<LineGridProps> = ({ scale, stageWidth, stageHeight, stageX, stageY }) => {
   const gridLines = useMemo(() => {
     const lines = [];
-    const baseGridSize = 20;
+    const baseGridSize = 12;
     let gridSize = baseGridSize;
 
     // Adjust grid size based on scale with new thresholds

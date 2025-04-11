@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Circle, Group } from 'react-konva';
+import { Group, Shape } from 'react-konva';
 
 interface GridProps {
   scale: number;
@@ -10,9 +10,8 @@ interface GridProps {
 }
 
 const Grid: React.FC<GridProps> = ({ scale, stageWidth, stageHeight, stageX, stageY }) => {
-  const dots = useMemo(() => {
-    const points = [];
-    const baseGridSize = 20;
+  const gridShape = useMemo(() => {
+    const baseGridSize = 12;
     let gridSize = baseGridSize;
 
     // Adjust grid size based on scale
@@ -28,33 +27,30 @@ const Grid: React.FC<GridProps> = ({ scale, stageWidth, stageHeight, stageX, sta
     const endX = Math.ceil((stageWidth - stageX) / scale / gridSize) * gridSize;
     const endY = Math.ceil((stageHeight - stageY) / scale / gridSize) * gridSize;
 
-    // Increased base dot size from 1 to 2
-    const baseDotSize = 2;
-    const dotSize = baseDotSize / scale;
-
-    // Create dots at grid intersections
-    for (let x = startX; x <= endX; x += gridSize) {
-      for (let y = startY; y <= endY; y += gridSize) {
-        // Check if this is a major grid point (every 4 cells)
-        const isMajorPoint = x % (gridSize * 4) === 0 && y % (gridSize * 4) === 0;
-        
-        points.push(
-          <Circle
-            key={`${x},${y}`}
-            x={x}
-            y={y}
-            radius={isMajorPoint ? dotSize * 1.5 : dotSize}
-            fill={isMajorPoint ? "#888888" : "#AAAAAA"}
-            opacity={isMajorPoint ? 0.4 : 0.1}
-          />
-        );
-      }
-    }
-
-    return points;
+    return (
+      <Shape
+        sceneFunc={(context) => {
+          context.globalAlpha = 0.5; // Set the opacity of the dots
+          context.beginPath();
+          for (let x = startX; x <= endX; x += gridSize) {
+            for (let y = startY; y <= endY; y += gridSize) {
+              const isMajorPoint = x % (gridSize * 4) === 0 && y % (gridSize * 4) === 0;
+              if (isMajorPoint) {
+                const dotSize = 3 / scale;
+                context.moveTo(x + dotSize, y);
+                context.arc(x, y, dotSize, 0, Math.PI * 2, false);
+              }
+            }
+          }
+          context.fillStyle = '#888888';
+          context.fill();
+          context.closePath();
+        }}
+      />
+    );
   }, [scale, stageWidth, stageHeight, stageX, stageY]);
 
-  return <Group>{dots}</Group>;
+  return <Group>{gridShape}</Group>;
 };
 
 export default Grid;

@@ -44,7 +44,7 @@ const EraserTool: React.FC<EraserToolProps> = ({
   };
 
   // Update cursor size dynamically when the eraser is selected
-  useEffect(() => {
+  /* useEffect(() => {
     if (isSelected) {
       document.body.style.cursor = `url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"${size}\" height=\"${size}\" viewBox=\"0 0 ${size} ${size}\"><circle cx=\"${size / 2}\" cy=\"${size / 2}\" r=\"${size / 2}\" fill=\"black\" /></svg>') ${size / 2} ${size / 2}, auto`;
     } else {
@@ -54,7 +54,7 @@ const EraserTool: React.FC<EraserToolProps> = ({
     return () => {
       document.body.style.cursor = 'default';
     };
-  }, [isSelected, size]);
+  }, [isSelected, size]); */
   
   return (
     <button
