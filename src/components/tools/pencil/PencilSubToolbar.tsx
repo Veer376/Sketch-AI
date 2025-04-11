@@ -4,21 +4,23 @@ import { getCurrentTheme } from '../../../utils/theme';
 export interface PencilSubToolbarProps {
   isVisible: boolean;
   thickness?: number;
-  onThicknessChange?: (thickness: number) => void;
+  onThicknessChange?: (thickness: number) => void; // Only thickness needed
   onHoverChange?: (isHovered: boolean) => void;
-  // Will extend with more properties like:
-  // color?: string;
-  // onColorChange?: (color: string) => void;
+  selectedColor: string; // Use selectedColor from parent
+  onColorChange: (color: string) => void; // Callback to update color in parent
 }
 
 const PencilSubToolbar: React.FC<PencilSubToolbarProps> = ({ 
   isVisible, 
   thickness = 2, 
   onThicknessChange,
-  onHoverChange
+  onHoverChange,
+  selectedColor, // Receive from parent
+  onColorChange // Receive from parent
 }) => {
   const theme = getCurrentTheme();
   const [isThicknessHovered, setIsThicknessHovered] = useState(false);
+  // Removed local color state and color adding logic as it's now fixed
   
   if (!isVisible) return null;
   
@@ -32,7 +34,13 @@ const PencilSubToolbar: React.FC<PencilSubToolbarProps> = ({
   
   const handleThicknessChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newThickness = parseFloat(e.target.value);
-    onThicknessChange?.(newThickness);
+    onThicknessChange?.(newThickness); // Only pass thickness
+  };
+
+  // Call the parent's color change handler
+  const handleColorSelect = (color: string) => {
+    onColorChange(color); // Update color via callback to App.tsx
+    // No need to call onThicknessChange here for color
   };
   
   return (
@@ -99,8 +107,9 @@ const PencilSubToolbar: React.FC<PencilSubToolbarProps> = ({
           value={thickness}
           onChange={handleThicknessChange}
           style={{
-            width: '100%',
+            width: '100px', // Match EraserSubToolbar
             accentColor: theme.toolbarButtonSelected,
+            padding: '5px',
           }}
         />
         
@@ -132,6 +141,29 @@ const PencilSubToolbar: React.FC<PencilSubToolbarProps> = ({
             </span>
           </div>
         )}
+      </div>
+
+      {/* Color Selection - Simplified to use props */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <label style={{ color: theme.toolbarText, fontWeight: 'bold' }}>Colors:</label>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          {['red', 'black', 'blue'].map((color, index) => (
+            <div key={index} style={{ position: 'relative' }}>
+              <div
+                onClick={() => handleColorSelect(color)} // Call the correct handler
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  backgroundColor: color,
+                  borderRadius: '50%',
+                  border: selectedColor === color ? `3px solid ${theme.primary}` : '2px solid white', // Use selectedColor prop
+                  boxShadow: '0 0 4px rgba(0, 0, 0, 0.2)',
+                  cursor: 'pointer',
+                }}
+              ></div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

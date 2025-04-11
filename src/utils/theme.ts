@@ -45,9 +45,8 @@ export const themes: Record<ThemeType, ThemeColors> = {
 };
 
 // Create a function to get the current theme
-export const getCurrentTheme = (): ThemeColors => {
-  // Hardcoded to light theme for now
-  return themes.light;
+export const getCurrentTheme = (themeType: ThemeType = 'light'): ThemeColors => {
+  return themes[themeType];
 };
 
 export default getCurrentTheme;

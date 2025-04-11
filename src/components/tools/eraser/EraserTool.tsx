@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { getCurrentTheme } from '../../../utils/theme';
+import { bounceUIElement } from '../../../utils/animation';
 
 export interface EraserToolProps {
   isSelected: boolean;
   onSelect: () => void;
   onHoverChange?: (isHovered: boolean) => void;
+  size: number; // Add size prop
 }
 
 // SVG icon for eraser tool
@@ -19,9 +21,11 @@ const EraserIcon = () => (
 const EraserTool: React.FC<EraserToolProps> = ({ 
   isSelected, 
   onSelect,
-  onHoverChange 
+  onHoverChange,
+  size // Use size prop
 }) => {
   const theme = getCurrentTheme();
+  const buttonRef = useRef<HTMLButtonElement>(null);
   
   const handleMouseEnter = () => {
     onHoverChange?.(true);
@@ -30,11 +34,33 @@ const EraserTool: React.FC<EraserToolProps> = ({
   const handleMouseLeave = () => {
     onHoverChange?.(false);
   };
+
+  const handleClick = () => {
+    // Apply bounce animation when clicked
+    if (buttonRef.current) {
+      bounceUIElement(buttonRef.current, 1.0, 300);
+    }
+    onSelect();
+  };
+
+  // Update cursor size dynamically when the eraser is selected
+  useEffect(() => {
+    if (isSelected) {
+      document.body.style.cursor = `url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"${size}\" height=\"${size}\" viewBox=\"0 0 ${size} ${size}\"><circle cx=\"${size / 2}\" cy=\"${size / 2}\" r=\"${size / 2}\" fill=\"black\" /></svg>') ${size / 2} ${size / 2}, auto`;
+    } else {
+      document.body.style.cursor = 'default';
+    }
+
+    return () => {
+      document.body.style.cursor = 'default';
+    };
+  }, [isSelected, size]);
   
   return (
     <button
+      ref={buttonRef}
       title="Eraser Tool"
-      onClick={onSelect}
+      onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       style={{

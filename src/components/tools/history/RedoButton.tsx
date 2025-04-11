@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { getCurrentTheme } from '../../../utils/theme';
+import { bounceUIElement } from '../../../utils/animation';
 
 export interface RedoButtonProps {
   onClick: () => void;
@@ -20,11 +21,23 @@ const RedoButton: React.FC<RedoButtonProps> = ({
   disabled = false
 }) => {
   const theme = getCurrentTheme();
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  
+  const handleClick = () => {
+    if (disabled) return;
+    
+    // Apply bounce animation when clicked
+    if (buttonRef.current) {
+      bounceUIElement(buttonRef.current, 1.0, 300);
+    }
+    onClick();
+  };
   
   return (
     <button
+      ref={buttonRef}
       title="Redo"
-      onClick={onClick}
+      onClick={handleClick}
       disabled={disabled}
       style={{
         backgroundColor: theme.toolbarButton,

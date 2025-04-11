@@ -3,40 +3,62 @@ import { Stage, Layer, Line } from 'react-konva';
 import ToolbarContainer from './components/toolbar/ToolbarContainer';
 import { getCurrentTheme } from './utils/theme';
 import ToolManager from './components/tools/ToolManager';
+import { springAnimation } from './utils/animation';
+import DotGrid from './components/canvas/Grid';
+import LineGrid from './components/canvas/LineGrid';
+import { GridType } from './components/tools/grid/GridSubToolbar';
 import './App.css';
 
 // Define a type for the line objects
 interface LineType {
   points: number[];
   thickness: number;
+  color: string; // Ensure color is part of the type
 }
 
 // Base64 encoded pencil cursor
 const PENCIL_CURSOR = `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE5LjMgOC45MjVMMTUuMDUgNC42NzVMMTYuNDUgMy4yNzVDMTcuMDUgMi42NzUgMTcuODM0IDIuMzc1IDE4LjggMi4zNzVDMTkuNzY3IDIuMzc1IDIwLjU1IDIuNjc1IDIxLjE1IDMuMjc1TDIyLjcyNSA0Ljg1QzIzLjMyNSA1LjQ1IDIzLjYyNSA2LjIzNCAyMy42MjUgNy4yQzIzLjYyNSA4LjE2NyAyMy4zMjUgOC45NSAyMi43MjUgOS41NUwyMS4zMjUgMTAuOTVMMTkuMyA4LjkyNVpNMTcuODc1IDEwLjM1TDguNjc1IDE5LjU1QzguMTc1IDIwLjA1IDcuNTg0IDIwLjQyIDYuOSAyMC42NjJDNi4yMTcgMjAuOTA0IDUuNTE3IDIxLjAyNSA0LjggMjEuMDI1SDMuOTc1QzMuNzA4IDIxLjAyNSAzLjQ4NyAyMC45MzcgMy4zMTIgMjAuNzYyQzMuMTM3IDIwLjU4NyAzLjA1IDIwLjM2NyAzLjA1IDIwLjFWMTkuMjc1QzMuMDUgMTguNTU5IDMuMTcyIDE3Ljg1OSAzLjQxNSAxNy4xNzVDMy42NTcgMTYuNDkyIDQuMDI1IDE1LjkgNC41MjUgMTUuNEwxMy43MjUgNi4yTDE3Ljg3NSAxMC4zNVoiIGZpbGw9ImJsYWNrIi8+Cjwvc3ZnPgo=`;
-
 const ERASER_CURSOR = `data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE1LjUgMTZsMy41LTMuNS00LjUtNC41LTcgNyAxLjUgMS41IiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8cGF0aCBkPSJNMTMgMThIMjEiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CjxwYXRoIGQ9Ik03LjUgMTVMMyAxMC41IDEwLjUgMyAxOCAxMC41IiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K`;
+
+// Create a function to generate a colored pencil cursor
+const generatePencilCursor = (color: string) => {
+  return `data:image/svg+xml;base64,${btoa(`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M19.3 8.925L15.05 4.675L16.45 3.275C17.05 2.675 17.834 2.375 18.8 2.375C19.767 2.375 20.55 2.675 21.15 3.275L22.725 4.85C23.325 5.45 23.625 6.234 23.625 7.2C23.625 8.167 23.325 8.95 22.725 9.55L21.325 10.95L19.3 8.925ZM17.875 10.35L8.675 19.55C8.175 20.05 7.584 20.42 6.9 20.662C6.217 20.904 5.517 21.025 4.8 21.025H3.975C3.708 21.025 3.487 20.937 3.312 20.762C3.137 20.587 3.05 20.367 3.05 20.1V19.275C3.05 18.559 3.172 17.859 3.415 17.175C3.657 16.492 4.025 15.9 4.525 15.4L13.725 6.2L17.875 10.35Z" 
+    fill="${color}"/></svg>`)}`;
+};
+
+// Add initial state constants for positioning and scale
+const INITIAL_SCALE = 1;
+const INITIAL_POSITION = { x: 0, y: 0 };
 
 function App() {
   const [lines, setLines] = useState<LineType[]>([]);
   const [history, setHistory] = useState<LineType[][]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const [windowSize, setWindowSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight
+  });
   const isDrawing = useRef(false);
-  const [scale, setScale] = useState(1);
-  const [stagePosition, setStagePosition] = useState({ x: 0, y: 0 });
-  const [selectedTool, setSelectedTool] = useState<'pencil' | 'eraser' | null>(null);
+  const [scale, setScale] = useState(INITIAL_SCALE);
+  const [stagePosition, setStagePosition] = useState(INITIAL_POSITION);
+  const [selectedTool, setSelectedTool] = useState<'pencil' | 'eraser' | 'grid' | null>(null);
   const [pencilThickness, setPencilThickness] = useState(2);
+  const [selectedColor, setSelectedColor] = useState<string>('black'); // Default color black, managed here
+  const [gridType, setGridType] = useState<GridType>('lines');
   const theme = getCurrentTheme();
   const stageRef = useRef<any>(null);
   const toolManager = useRef(new ToolManager());
   const lastPointerPosition = useRef<{ x: number; y: number } | null>(null);
 
-  const handleToolSelect = (tool: 'pencil' | 'eraser' | null) => {
+  const handleToolSelect = (tool: 'pencil' | 'eraser' | 'grid' | null) => {
     setSelectedTool(tool);
     toolManager.current.setTool(tool);
   };
 
   const handlePencilOptionsChange = (options: { thickness: number }) => {
     setPencilThickness(options.thickness);
+    // Color is handled by onColorChange directly
   };
 
   const saveToHistory = (currentLines: LineType[]) => {
@@ -86,13 +108,25 @@ function App() {
     const container = stage.container();
 
     if (selectedTool === 'pencil') {
-      container.style.cursor = `url('${PENCIL_CURSOR}') 0 24, auto`;
+      container.style.cursor = `url('${generatePencilCursor(selectedColor)}') 0 24, auto`;
     } else if (selectedTool === 'eraser') {
       container.style.cursor = `url('${ERASER_CURSOR}') 0 24, auto`;
     } else {
       container.style.cursor = 'default';
     }
-  }, [selectedTool]);
+  }, [selectedTool, selectedColor]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleMouseDown = (e: any) => {
     if (!selectedTool) return;
@@ -115,6 +149,7 @@ function App() {
           {
             points: [adjustedPointer.x, adjustedPointer.y],
             thickness: pencilThickness,
+            color: selectedColor, // Use the state variable directly
           },
         ];
         return newLines;
@@ -191,7 +226,7 @@ function App() {
   const handleDragEnd = (e: any) => {
     const stage = e.target.getStage();
     if (selectedTool === 'pencil') {
-      stage.container().style.cursor = `url('${PENCIL_CURSOR}') 0 24, auto`;
+      stage.container().style.cursor = `url('${generatePencilCursor(selectedColor)}') 0 24, auto`;
     } else if (selectedTool === 'eraser') {
       stage.container().style.cursor = `url('${ERASER_CURSOR}') 0 24, auto`;
     } else {
@@ -210,21 +245,31 @@ function App() {
       const pointer = stage.getPointerPosition();
 
       const scaleBy = 1.1;
-      const newScale = e.evt.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy;
+      let newScale = e.evt.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy;
+      
+      // Add scale limits to prevent infinite zoom
+      const minScale = 0.1;  // Minimum scale (zoomed out)
+      const maxScale = 5.0;  // Maximum scale (zoomed in)
+      
+      // Ensure the new scale is within bounds
+      newScale = Math.max(minScale, Math.min(maxScale, newScale));
+      
+      // Only update if the scale has changed
+      if (newScale !== oldScale) {
+        setScale(newScale);
 
-      setScale(newScale);
+        const mousePointTo = {
+          x: (pointer.x - stage.x()) / oldScale,
+          y: (pointer.y - stage.y()) / oldScale,
+        };
 
-      const mousePointTo = {
-        x: (pointer.x - stage.x()) / oldScale,
-        y: (pointer.y - stage.y()) / oldScale,
-      };
+        const newPos = {
+          x: pointer.x - mousePointTo.x * newScale,
+          y: pointer.y - mousePointTo.y * newScale,
+        };
 
-      const newPos = {
-        x: pointer.x - mousePointTo.x * newScale,
-        y: pointer.y - mousePointTo.y * newScale,
-      };
-
-      setStagePosition(newPos);
+        setStagePosition(newPos);
+      }
     } else {
       const newPos = {
         x: stage.x() - e.evt.deltaX,
@@ -233,6 +278,43 @@ function App() {
 
       setStagePosition(newPos);
     }
+  };
+
+  // Add a handler to reset the canvas to its initial position with animation
+  const handleCenterCanvas = () => {
+    const startScale = scale;
+    const startPosition = { ...stagePosition };
+    const animationDuration = 500; // Duration in milliseconds
+    
+    // Animate scale with bounce effect
+    springAnimation(
+      startScale,
+      INITIAL_SCALE,
+      animationDuration,
+      (value) => setScale(value),
+      0.6, // More bouncy
+      12  // Moderate speed
+    );
+    
+    // Animate x position with bounce effect
+    springAnimation(
+      startPosition.x,
+      INITIAL_POSITION.x,
+      animationDuration,
+      (value) => setStagePosition(prev => ({ ...prev, x: value })),
+      0.7, // Standard bounce
+      10  // Slightly slower
+    );
+    
+    // Animate y position with bounce effect
+    springAnimation(
+      startPosition.y,
+      INITIAL_POSITION.y,
+      animationDuration,
+      (value) => setStagePosition(prev => ({ ...prev, y: value })),
+      0.7, // Standard bounce
+      10  // Slightly slower
+    );
   };
 
   return (
@@ -254,11 +336,16 @@ function App() {
         selectedTool={selectedTool}
         onToolSelect={handleToolSelect}
         toolManager={toolManager.current}
-        onPencilOptionsChange={handlePencilOptionsChange}
+        onPencilOptionsChange={handlePencilOptionsChange} // Only thickness needed now
+        selectedColor={selectedColor} // Pass down the color state
+        onColorChange={setSelectedColor} // Pass down the state setter
         onUndo={handleUndo}
         onRedo={handleRedo}
         canUndo={historyIndex >= 0}
         canRedo={historyIndex < history.length - 1}
+        onCenterCanvas={handleCenterCanvas} // Add the center canvas handler
+        gridType={gridType}
+        onGridTypeChange={setGridType}
       />
       <div
         style={{
@@ -270,8 +357,8 @@ function App() {
         <div style={{ width: '100%', height: '100%' }}>
           <Stage
             ref={stageRef}
-            width={window.innerWidth}
-            height={window.innerHeight}
+            width={windowSize.width}
+            height={windowSize.height}
             onMouseDown={handleMouseDown}
             onMousemove={handleMouseMove}
             onMouseup={handleMouseUp}
@@ -286,11 +373,30 @@ function App() {
             style={{ backgroundColor: theme.canvas }}
           >
             <Layer>
+              {gridType === 'dots' ? (
+                <DotGrid
+                  scale={scale}
+                  stageWidth={windowSize.width}
+                  stageHeight={windowSize.height}
+                  stageX={stagePosition.x}
+                  stageY={stagePosition.y}
+                />
+              ) : (
+                <LineGrid
+                  scale={scale}
+                  stageWidth={windowSize.width}
+                  stageHeight={windowSize.height}
+                  stageX={stagePosition.x}
+                  stageY={stagePosition.y}
+                />
+              )}
+            </Layer>
+            <Layer>
               {lines.map((line, i) => (
                 <Line
                   key={i}
                   points={line.points}
-                  stroke={theme.foreground}
+                  stroke={line.color} // Use the color stored in the line object
                   strokeWidth={(line.thickness || 2) / scale}
                   tension={0.5}
                   lineCap="round"

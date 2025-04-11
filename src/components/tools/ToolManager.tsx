@@ -12,7 +12,10 @@ export const initialToolState: Record<string, any> = {
     // Default pencil options will go here
     thickness: 2,
     color: '#000000',
-  }
+  },
+  eraser: {
+    size: 10, // Default eraser size
+  },
 };
 
 // A tool state manager that can be expanded as needed

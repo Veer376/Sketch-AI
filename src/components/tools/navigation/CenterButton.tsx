@@ -2,30 +2,23 @@ import React, { useRef } from 'react';
 import { getCurrentTheme } from '../../../utils/theme';
 import { bounceUIElement } from '../../../utils/animation';
 
-export interface UndoButtonProps {
+export interface CenterButtonProps {
   onClick: () => void;
-  disabled?: boolean;
 }
 
-// SVG icon for undo
-const UndoIcon = () => (
+// SVG icon for center button
+const CenterIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M3 10H16C19.866 10 23 13.134 23 17C23 20.866 19.866 24 16 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M3 10L9 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M3 10L9 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M12 2V22M2 12H22M7 12C7 9.23858 9.23858 7 12 7C14.7614 7 17 9.23858 17 12C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12Z" 
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
   </svg>
 );
 
-const UndoButton: React.FC<UndoButtonProps> = ({ 
-  onClick,
-  disabled = false
-}) => {
+const CenterButton: React.FC<CenterButtonProps> = ({ onClick }) => {
   const theme = getCurrentTheme();
   const buttonRef = useRef<HTMLButtonElement>(null);
   
   const handleClick = () => {
-    if (disabled) return;
-    
     // Apply bounce animation when clicked
     if (buttonRef.current) {
       bounceUIElement(buttonRef.current, 1.0, 300);
@@ -36,16 +29,15 @@ const UndoButton: React.FC<UndoButtonProps> = ({
   return (
     <button
       ref={buttonRef}
-      title="Undo"
+      title="Center Canvas"
       onClick={handleClick}
-      disabled={disabled}
       style={{
         backgroundColor: theme.toolbarButton,
-        color: disabled ? theme.toolbarButtonDisabled : theme.toolbarButtonText,
+        color: theme.toolbarButtonText,
         border: 'none',
         padding: '10px',
         borderRadius: '8px',
-        cursor: disabled ? 'not-allowed' : 'pointer',
+        cursor: 'pointer',
         marginBottom: '10px',
         display: 'flex',
         justifyContent: 'center',
@@ -53,12 +45,11 @@ const UndoButton: React.FC<UndoButtonProps> = ({
         width: '40px',
         outline: 'none', 
         height: '40px',
-        opacity: disabled ? 0.5 : 1,
       }}
     >
-      <UndoIcon />
+      <CenterIcon />
     </button>
   );
 };
 
-export default UndoButton;
+export default CenterButton;
