@@ -108,14 +108,14 @@ const GridSubToolbar: React.FC<GridSubToolbarProps> = ({
         justifyContent: 'center'
       }}>
         <button
-          title="Dot Grid"
+          title="Dot Background"
           onClick={() => onTypeChange('dots')}
           style={buttonStyle(selectedType === 'dots')}
         >
           <DotGridIcon />
         </button>
         <button
-          title="Line Grid"
+          title="Grid Background"
           onClick={() => onTypeChange('lines')}
           style={buttonStyle(selectedType === 'lines')}
         >

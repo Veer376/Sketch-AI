@@ -4,8 +4,8 @@ import ToolbarContainer from '../toolbar/ToolbarContainer';
 import { getCurrentTheme } from '../../utils/theme';
 import ToolManager from '../tools/ToolManager';
 import { springAnimation } from '../../utils/animation';
-import DotGrid from './backgrounds/Grid';
-import LineGrid from './backgrounds/LineGrid';
+import Dot from './backgrounds/Dot';
+import Grid from './backgrounds/Grid';
 import { GridType } from '../tools/grid/GridSubToolbar';
 // import './App.css';
 
@@ -140,6 +140,11 @@ function App() {
   }, []);
 
   const handleMouseDown = (e: any) => {
+    // Prevent default touch behavior (scrolling/panning) only when drawing
+    if (selectedTool === 'pencil' || selectedTool === 'eraser') {
+      e.evt.preventDefault();
+    }
+
     if (!selectedTool) return;
 
     const stage = e.target.getStage();
@@ -185,6 +190,11 @@ function App() {
   };
 
   const handleMouseMove = (e: any) => {
+    // Prevent default touch behavior (scrolling/panning) only when drawing
+    if (isDrawing.current && (selectedTool === 'pencil' || selectedTool === 'eraser')) {
+      e.evt.preventDefault();
+    }
+
     const stage = e.target.getStage();
     const pointer = stage.getPointerPosition();
 
@@ -399,6 +409,8 @@ function App() {
           width: '100%',
           height: '100%',
           overflow: 'hidden',
+          maskImage: 'radial-gradient(ellipse at center, rgba(0,0,0,1) 60%, rgba(0,0,0,0) 100%)',
+          WebkitMaskImage: 'radial-gradient(ellipse at center, rgba(0,0,0,1) 60%, rgba(0,0,0,0) 100%)',
         }}
       >
         <div style={{ width: '100%', height: '100%' }}>
@@ -412,16 +424,19 @@ function App() {
             onWheel={handleWheel}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
+            onTouchStart={handleMouseDown} // Add touch handler
+            onTouchMove={handleMouseMove}  // Add touch handler
+            onTouchEnd={handleMouseUp}    // Add touch handler
             scaleX={scale}
             scaleY={scale}
             x={stagePosition.x}
             y={stagePosition.y}
-            draggable={!selectedTool}
+            draggable={!(selectedTool === 'pencil' || selectedTool === 'eraser')} // Only draggable if NOT pencil/eraser
             style={{ backgroundColor: theme.canvas }}
           >
             <Layer>
               {gridType === 'dots' ? (
-                <DotGrid
+                <Dot
                   scale={scale}
                   stageWidth={windowSize.width}
                   stageHeight={windowSize.height}
@@ -429,7 +444,7 @@ function App() {
                   stageY={stagePosition.y}
                 />
               ) : (
-                <LineGrid
+                <Grid
                   scale={scale}
                   stageWidth={windowSize.width}
                   stageHeight={windowSize.height}
