@@ -13,8 +13,10 @@ import ToolManager from '../tools/ToolManager';
 import CenterButton from '../tools/navigation/CenterButton'; // Import CenterButton
 import { springAnimation } from '../../utils/animation'; // Import springAnimation
 import { bounceUIElement } from '../../utils/animation'; // Import bounce animation
+import TextTool from '../tools/text/TextTool'; // Import TextTool
+import TextSubToolbar, { TextFormattingOptions } from '../tools/text/TextSubToolbar'; // Import TextSubToolbar
 
-export type Tool = 'pencil' | 'eraser' | 'grid' | null; // Remove 'text' from Tool type
+export type Tool = 'pencil' | 'eraser' | 'grid' | 'text' | null;
 
 interface ToolbarContainerProps {
   selectedTool: Tool;
@@ -25,6 +27,8 @@ interface ToolbarContainerProps {
   onColorChange: (color: string) => void; // Add onColorChange prop
   eraserSize: number; // Add eraserSize prop
   onEraserSizeChange: (size: number) => void; // Add onEraserSizeChange prop
+  textFormatOptions?: TextFormattingOptions; // Add text formatting options
+  onTextFormatOptionsChange?: (options: Partial<TextFormattingOptions>) => void; // Add text format change handler
   onUndo?: () => void;
   onRedo?: () => void;
   canUndo?: boolean;
@@ -45,6 +49,8 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
   onColorChange, // Receive onColorChange
   eraserSize, // Receive eraserSize
   onEraserSizeChange, // Receive onEraserSizeChange
+  textFormatOptions, // Receive text formatting options
+  onTextFormatOptionsChange, // Receive text format change handler
   onUndo,
   onRedo,
   canUndo = false,
@@ -85,6 +91,7 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
   const pencilToolRef = useRef<HTMLDivElement>(null);
   const eraserToolRef = useRef<HTMLDivElement>(null);
   const gridToolRef = useRef<HTMLDivElement>(null);
+  const textToolRef = useRef<HTMLDivElement>(null); // Add ref for TextTool
 
   // State for tool button Y positions
   const [pencilButtonY, setPencilButtonY] = useState(0);
@@ -379,6 +386,10 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
          <div ref={eraserToolRef}>
            <EraserTool isSelected={selectedTool === 'eraser'} onSelect={() => toggleTool('eraser')} onHoverChange={handleEraserHoverChange} size={eraserSize}/>
          </div>
+         {/* Add Text Tool Button */}
+         <div ref={textToolRef}>
+           <TextTool isSelected={selectedTool === 'text'} onSelect={() => toggleTool('text')} />
+         </div>
          <ResetCanvasTool onReset={onResetCanvas} />
          <div ref={gridToolRef}>
            <GridTool isSelected={selectedTool === 'grid'} onSelect={() => toggleTool('grid')} onHoverChange={handleGridHoverChange}/>
@@ -441,6 +452,23 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
         parentWidth={toolbarWidth}
         snapSide={snapSide}
         toolButtonY={gridButtonY}
+      />
+
+      <TextSubToolbar 
+        isVisible={selectedTool === 'text'}
+        options={textFormatOptions || {
+          fontSize: 20,
+          fontFamily: 'Arial',
+          isBold: false,
+          isItalic: false,
+          isUnderline: false
+        }}
+        onOptionsChange={onTextFormatOptionsChange || (() => {})}
+        onHoverChange={() => {}}
+        parentPosition={position}
+        parentWidth={toolbarWidth}
+        snapSide={snapSide}
+        toolButtonY={textToolRef.current ? textToolRef.current.getBoundingClientRect().top : 0}
       />
     </>
   );
