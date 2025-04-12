@@ -7,6 +7,8 @@ import { springAnimation } from '../../utils/animation';
 import Dot from './backgrounds/Dot';
 import Grid from './backgrounds/Grid';
 import { GridType } from '../tools/grid/GridSubToolbar';
+import LineGrid from './backgrounds/LineGrid';
+import ZoomControlPanel from '../controls/ZoomControlPanel';
 // import './App.css';
 
 // Define a type for the line objects
@@ -42,6 +44,7 @@ function App() {
   const [selectedColor, setSelectedColor] = useState<string>('black'); // Default color black, managed here
   const [gridType, setGridType] = useState<GridType>('lines');
   const [eraserSize, setEraserSize] = useState(10); // Add eraser size state here
+  const [isZoomPanelVisible, setIsZoomPanelVisible] = useState(false); // State for zoom panel visibility
   const theme = getCurrentTheme();
   const stageRef = useRef<any>(null);
   const toolManager = useRef(new ToolManager());
@@ -277,11 +280,9 @@ function App() {
       const scaleBy = 1.1;
       let newScale = e.evt.deltaY > 0 ? oldScale / scaleBy : oldScale * scaleBy;
       
-      // Add scale limits to prevent infinite zoom
-      const minScale = 0.1;  // Minimum scale (zoomed out)
-      const maxScale = 5.0;  // Maximum scale (zoomed in)
-      
-      // Ensure the new scale is within bounds
+      // Apply scale limits
+      const minScale = 0.1;
+      const maxScale = 3.0; // Changed max scale to 3.0
       newScale = Math.max(minScale, Math.min(maxScale, newScale));
       
       // Only update if the scale has changed
@@ -403,6 +404,7 @@ function App() {
         onResetCanvas={handleResetCanvas} // Pass the reset canvas handler
         gridType={gridType}
         onGridTypeChange={setGridType}
+        onToggleZoomPanel={() => setIsZoomPanelVisible(!isZoomPanelVisible)} // Pass toggle handler
       />
       <div
         style={{
@@ -457,6 +459,17 @@ function App() {
           </Stage>
         </div>
       </div>
+      
+      {/* Render Zoom Control Panel conditionally */}
+      {isZoomPanelVisible && (
+        <ZoomControlPanel
+          initialScale={scale} // Pass current scale
+          minScale={0.1} // Define limits
+          maxScale={3.0} // Changed max scale to 3.0
+          scaleStep={0.05} // Finer step
+          onScaleChange={(newScale) => setScale(newScale)} // Update canvas scale state
+        />
+      )}
     </div>
   );
 }

@@ -55,9 +55,10 @@ const DiscreteSliderControl: React.FC<DiscreteSliderControlProps> = ({
           size="small"
           sx={{ width: width, margin: '0 10px'}} // Apply width
         />
-        <Typography sx={{ minWidth: '35px', fontSize: '12px', textAlign: 'right'}}>
-          {value}{unit}
+        <Typography sx={{ minWidth: '35px', fontSize: '12px', textAlign: 'right' }}>
+          {Number(value).toFixed(1)}{unit}
         </Typography>
+
       </Stack>
     </Box>
   );

@@ -12,6 +12,7 @@ import GridSubToolbar, { GridType } from '../tools/grid/GridSubToolbar'; // Impo
 import ToolManager from '../tools/ToolManager';
 import CenterButton from '../tools/navigation/CenterButton'; // Import CenterButton
 import { springAnimation } from '../../utils/animation'; // Import springAnimation
+import { bounceUIElement } from '../../utils/animation'; // Import bounce animation
 
 export type Tool = 'pencil' | 'eraser' | 'grid' | null; // Remove 'text' from Tool type
 
@@ -32,6 +33,7 @@ interface ToolbarContainerProps {
   onResetCanvas?: () => void; // Add onResetCanvas prop
   gridType: GridType; // Add gridType prop
   onGridTypeChange: (type: GridType) => void; // Add onGridTypeChange prop
+  onToggleZoomPanel?: () => void; // Add onToggleZoomPanel prop
 }
 
 const ToolbarContainer: React.FC<ToolbarContainerProps> = ({ 
@@ -51,6 +53,7 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
   onResetCanvas, // Receive onResetCanvas
   gridType, // Receive gridType
   onGridTypeChange, // Receive onGridTypeChange
+  onToggleZoomPanel, // Receive onToggleZoomPanel
 }) => {
   const theme = getCurrentTheme();
   const [pencilThickness, setPencilThickness] = useState(2);
@@ -400,6 +403,8 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
            }} />
         <UndoButton onClick={onUndo || (() => {})} disabled={!canUndo} />
         <RedoButton onClick={onRedo || (() => {})} disabled={!canRedo} />
+        {/* Add Zoom Control Toggle Button */}
+        <ZoomControlButton onClick={onToggleZoomPanel || (() => {})} /> 
       </div>
 
       {/* Tool-specific Subtoolbars - Still need adjustment, but simpler now */}
@@ -438,6 +443,47 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
         toolButtonY={gridButtonY}
       />
     </>
+  );
+};
+
+// Add Zoom Control Button component
+const ZoomControlButton: React.FC<{ onClick: () => void }> = ({ onClick }) => {
+  const theme = getCurrentTheme();
+  const buttonRef = useRef<HTMLDivElement>(null);
+
+  const handleClick = () => {
+    if (buttonRef.current) { // Check if ref exists
+      bounceUIElement(buttonRef.current);
+    }
+    onClick();
+  };
+  
+  return (
+    <div 
+      ref={buttonRef}
+      onClick={handleClick}
+      style={{
+        cursor: 'pointer',
+        padding: '8px',
+        borderRadius: '6px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: theme.toolbarButtonText,
+        backgroundColor: theme.toolbarButton,
+        width: '36px', 
+        height: '36px' 
+      }}
+      title="Zoom Controls"
+    >
+      {/* Simple Zoom Icon Placeholder */}
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        <line x1="11" y1="8" x2="11" y2="14"></line>
+        <line x1="8" y1="11" x2="14" y2="11"></line>
+      </svg>
+    </div>
   );
 };
 
