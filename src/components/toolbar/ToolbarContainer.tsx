@@ -15,8 +15,10 @@ import { springAnimation } from '../../utils/animation'; // Import springAnimati
 import { bounceUIElement } from '../../utils/animation'; // Import bounce animation
 import TextTool from '../tools/text/TextTool'; // Import TextTool
 import TextSubToolbar, { TextFormattingOptions } from '../tools/text/TextSubToolbar'; // Import TextSubToolbar
+import NoteTool from '../tools/note/NoteTool'; // Import NoteTool
+import NoteSubToolbar, { NoteStyle } from '../tools/note/NoteSubToolbar'; // Import NoteSubToolbar
 
-export type Tool = 'pencil' | 'eraser' | 'grid' | 'text' | null;
+export type Tool = 'pencil' | 'eraser' | 'grid' | 'text' | 'note' | null;
 
 interface ToolbarContainerProps {
   selectedTool: Tool;
@@ -29,6 +31,8 @@ interface ToolbarContainerProps {
   onEraserSizeChange: (size: number) => void; // Add onEraserSizeChange prop
   textFormatOptions?: TextFormattingOptions; // Add text formatting options
   onTextFormatOptionsChange?: (options: Partial<TextFormattingOptions>) => void; // Add text format change handler
+  selectedNoteStyle?: string; // Add selected note style
+  onNoteStyleChange?: (styleId: string) => void; // Add note style change handler
   onUndo?: () => void;
   onRedo?: () => void;
   canUndo?: boolean;
@@ -51,6 +55,8 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
   onEraserSizeChange, // Receive onEraserSizeChange
   textFormatOptions, // Receive text formatting options
   onTextFormatOptionsChange, // Receive text format change handler
+  selectedNoteStyle, // Receive selected note style
+  onNoteStyleChange, // Receive note style change handler
   onUndo,
   onRedo,
   canUndo = false,
@@ -79,7 +85,7 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
   const gridSubToolbarHoverTimeoutRef = useRef<number | null>(null); // Add grid subtoolbar timeout ref
   
   // Toolbar position, dragging, and snapping state
-  const initialY = window.innerHeight / 2 - 150; 
+  const initialY = window.innerHeight / 7; 
   const [position, setPosition] = useState({ x: 10, y: initialY }); 
   const [isDragging, setIsDragging] = useState(false);
   const dragStartOffset = useRef({ x: 0, y: 0 });
@@ -92,11 +98,21 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
   const eraserToolRef = useRef<HTMLDivElement>(null);
   const gridToolRef = useRef<HTMLDivElement>(null);
   const textToolRef = useRef<HTMLDivElement>(null); // Add ref for TextTool
+  const noteToolRef = useRef<HTMLDivElement>(null); // Add ref for NoteTool
 
   // State for tool button Y positions
   const [pencilButtonY, setPencilButtonY] = useState(0);
   const [eraserButtonY, setEraserButtonY] = useState(0);
   const [gridButtonY, setGridButtonY] = useState(0);
+  const [noteButtonY, setNoteButtonY] = useState(0);
+  
+  // Add hover state for NoteTool
+  const [isNoteHovered, setIsNoteHovered] = useState(false);
+  const [isNoteSubToolbarHovered, setIsNoteSubToolbarHovered] = useState(false);
+
+  // Add timeout ref for NoteTool
+  const noteHoverTimeoutRef = useRef<number | null>(null);
+  const noteSubToolbarHoverTimeoutRef = useRef<number | null>(null);
   
   // Function to toggle a tool's selection state
   const toggleTool = (tool: Tool) => {
@@ -215,6 +231,39 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
     }
   };
   
+  // Add handler for NoteTool hover
+  const handleNoteHoverChange = (isHovered: boolean) => {
+    if (isHovered) {
+      if (noteToolRef.current) {
+        setNoteButtonY(noteToolRef.current.getBoundingClientRect().top);
+      }
+      if (noteHoverTimeoutRef.current !== null) clearTimeout(noteHoverTimeoutRef.current);
+      noteHoverTimeoutRef.current = null;
+      setIsNoteHovered(true);
+    } else {
+      noteHoverTimeoutRef.current = window.setTimeout(() => {
+        setIsNoteHovered(false);
+        noteHoverTimeoutRef.current = null;
+      }, 100);
+    }
+  };
+
+  // Add handler for NoteSubToolbar hover
+  const handleNoteSubToolbarHoverChange = (isHovered: boolean) => {
+    if (isHovered) {
+      if (noteSubToolbarHoverTimeoutRef.current !== null) {
+        window.clearTimeout(noteSubToolbarHoverTimeoutRef.current);
+        noteSubToolbarHoverTimeoutRef.current = null;
+      }
+      setIsNoteSubToolbarHovered(true);
+    } else {
+      noteSubToolbarHoverTimeoutRef.current = window.setTimeout(() => {
+        setIsNoteSubToolbarHovered(false);
+        noteSubToolbarHoverTimeoutRef.current = null;
+      }, 100);
+    }
+  };
+  
   // Determine if the subtoolbar should be visible
   const shouldShowPencilSubToolbar = 
     (selectedTool === 'pencil' && isPencilHovered) || 
@@ -227,6 +276,11 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
   const shouldShowGridSubToolbar = // Add grid visibility logic
     (selectedTool === 'grid' && isGridHovered) ||
     (selectedTool === 'grid' && isGridSubToolbarHovered);
+
+  // Add shouldShowNoteSubToolbar logic
+  const shouldShowNoteSubToolbar = 
+    (selectedTool === 'note' && isNoteHovered) || 
+    (selectedTool === 'note' && isNoteSubToolbarHovered);
   
   // Initialize with tool manager's default values if available
   /* useEffect(() => {
@@ -261,6 +315,12 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
       }
       if (gridSubToolbarHoverTimeoutRef.current !== null) { // Add grid subtoolbar timeout cleanup
         window.clearTimeout(gridSubToolbarHoverTimeoutRef.current);
+      }
+      if (noteHoverTimeoutRef.current !== null) { // Add note timeout cleanup
+        window.clearTimeout(noteHoverTimeoutRef.current);
+      }
+      if (noteSubToolbarHoverTimeoutRef.current !== null) { // Add note subtoolbar timeout cleanup
+        window.clearTimeout(noteSubToolbarHoverTimeoutRef.current);
       }
     };
   }, []);
@@ -390,6 +450,9 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
          <div ref={textToolRef}>
            <TextTool isSelected={selectedTool === 'text'} onSelect={() => toggleTool('text')} />
          </div>
+         <div ref={noteToolRef}>
+           <NoteTool isSelected={selectedTool === 'note'} onSelect={() => toggleTool('note')} onHoverChange={handleNoteHoverChange} />
+         </div>
          <ResetCanvasTool onReset={onResetCanvas} />
          <div ref={gridToolRef}>
            <GridTool isSelected={selectedTool === 'grid'} onSelect={() => toggleTool('grid')} onHoverChange={handleGridHoverChange}/>
@@ -469,6 +532,17 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
         parentWidth={toolbarWidth}
         snapSide={snapSide}
         toolButtonY={textToolRef.current ? textToolRef.current.getBoundingClientRect().top : 0}
+      />
+
+      <NoteSubToolbar 
+        isVisible={shouldShowNoteSubToolbar}
+        selectedNoteStyle={selectedNoteStyle || 'yellow-note'}
+        onNoteStyleChange={onNoteStyleChange || (() => {})}
+        onHoverChange={handleNoteSubToolbarHoverChange}
+        parentPosition={position}
+        parentWidth={toolbarWidth}
+        snapSide={snapSide}
+        toolButtonY={noteToolRef.current ? noteToolRef.current.getBoundingClientRect().top : 0}
       />
     </>
   );

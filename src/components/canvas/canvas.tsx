@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { Stage, Layer, Line, Text } from 'react-konva';
+import { Stage, Layer, Line, Text, Group, Rect } from 'react-konva';
 import ToolbarContainer from '../toolbar/ToolbarContainer';
 import { getCurrentTheme } from '../../utils/theme';
 import ToolManager from '../tools/ToolManager';
@@ -10,6 +10,7 @@ import { GridType } from '../tools/grid/GridSubToolbar';
 // import LineGrid from './backgrounds/LineGrid'; // Removed as it seems to cause an error
 import ZoomControlPanel from '../controls/ZoomControlPanel';
 import { TextFormattingOptions } from '../tools/text/TextSubToolbar';
+import { NoteStyle, NOTE_STYLES } from '../tools/note/NoteSubToolbar';
 // import './App.css';
 
 // Define a type for the line objects
@@ -36,10 +37,28 @@ interface TextLayerType {
   isUnderline: boolean; // Underline formatting
 }
 
-// Define a type for the history state that includes both lines and text layers
+// Define a type for the note layer objects
+interface NoteLayerType {
+  id: string;
+  x: number;
+  y: number;
+  text: string;
+  fontSize: number;
+  width: number;
+  height: number;
+  styleId: string;
+  isEditing?: boolean;
+  fontFamily: string;
+  isBold: boolean;
+  isItalic: boolean;
+  isUnderline: boolean;
+}
+
+// Define a type for the history state that includes lines, text layers, and notes
 interface HistoryState {
   lines: LineType[];
   textLayers: TextLayerType[];
+  noteLayers: NoteLayerType[];
 }
 
 // Create a function to generate a colored pencil cursor
@@ -56,7 +75,9 @@ const INITIAL_POSITION = { x: 0, y: 0 };
 function App() {
   const [lines, setLines] = useState<LineType[]>([]);
   const [textLayers, setTextLayers] = useState<TextLayerType[]>([]); // State for text layers
+  const [noteLayers, setNoteLayers] = useState<NoteLayerType[]>([]); // State for note layers
   const [editingTextLayerId, setEditingTextLayerId] = useState<string | null>(null); // State to track the ID of the text layer being edited
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null); // State to track the ID of the note being edited
   const [history, setHistory] = useState<HistoryState[]>([]); // Update history to store both lines and text layers
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [windowSize, setWindowSize] = useState({
@@ -66,7 +87,7 @@ function App() {
   const isDrawing = useRef(false);
   const [scale, setScale] = useState(INITIAL_SCALE);
   const [stagePosition, setStagePosition] = useState(INITIAL_POSITION);
-  const [selectedTool, setSelectedTool] = useState<'pencil' | 'eraser' | 'grid' | 'text' | null>(null);
+  const [selectedTool, setSelectedTool] = useState<'pencil' | 'eraser' | 'grid' | 'text' | 'note' | null>(null);
   const [pencilThickness, setPencilThickness] = useState(4);
   const [selectedColor, setSelectedColor] = useState<string>('black'); // Default color black, managed here
   const [gridType, setGridType] = useState<GridType>('lines');
@@ -84,8 +105,9 @@ function App() {
     isItalic: false,
     isUnderline: false
   });
+  const [selectedNoteStyle, setSelectedNoteStyle] = useState<string>('yellow-note'); // Default note style
 
-  const handleToolSelect = (tool: 'pencil' | 'eraser' | 'grid' | 'text' | null) => {
+  const handleToolSelect = (tool: 'pencil' | 'eraser' | 'grid' | 'text' | 'note' | null) => {
     setSelectedTool(tool);
     toolManager.current.setTool(tool);
   };
@@ -96,13 +118,14 @@ function App() {
   };
 
   const saveToHistory = () => {
-    // Create a new history entry with current lines and text layers
+    // Create a new history entry with current lines, text layers, and note layers
     const newHistoryEntry: HistoryState = {
       lines: [...lines],
       textLayers: [...textLayers],
+      noteLayers: [...noteLayers],
     };
     
-    // Slice history to remove any future states (if we're undoing and then doing a new action)
+    // Slice history to remove any future states
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push(newHistoryEntry);
     
@@ -110,7 +133,7 @@ function App() {
     setHistoryIndex(newHistory.length - 1);
   };
 
-  // Define handleUndo and handleRedo as regular functions
+  // Update handleUndo and handleRedo to include note layers
   const handleUndo = () => {
     if (historyIndex > 0) {
       setHistoryIndex(historyIndex - 1);
@@ -118,22 +141,26 @@ function App() {
       const prevState = history[historyIndex - 1];
       setLines([...prevState.lines]);
       setTextLayers([...prevState.textLayers]);
+      setNoteLayers([...prevState.noteLayers]);
     } else if (historyIndex === 0) {
       // Clear everything if we're at the first history state
       setHistoryIndex(-1);
       setLines([]);
       setTextLayers([]);
+      setNoteLayers([]);
     }
   };
 
   const handleRedo = () => {
     if (historyIndex < history.length - 1) {
-      const newIndex = historyIndex + 1;
+      // If we're at -1 (the initial state), we need to go to index 0
+      const newIndex = historyIndex === -1 ? 0 : historyIndex + 1;
       setHistoryIndex(newIndex);
       // Restore next state
       const nextState = history[newIndex];
       setLines([...nextState.lines]);
       setTextLayers([...nextState.textLayers]);
+      setNoteLayers([...nextState.noteLayers]);
     }
   };
 
@@ -194,28 +221,20 @@ function App() {
   }, []);
 
   const handleMouseDown = (e: any) => {
-    // Prevent default touch behavior (scrolling/panning) only when drawing or using text tool
-    if (selectedTool === 'pencil' || selectedTool === 'eraser' || selectedTool === 'text') {
+    // Prevent default touch behavior when using drawing tools
+    if (selectedTool === 'pencil' || selectedTool === 'eraser' || selectedTool === 'text' || selectedTool === 'note') {
       e.evt.preventDefault();
     }
 
-    // If editing text, clicking outside should finish editing
-    if (editingTextLayerId) {
-       // Logic to finish editing will be added later
-       // For now, just return to avoid interference
-       return; 
+    // If editing text or note, clicking outside should finish editing
+    if (editingTextLayerId || editingNoteId) {
+      return; 
     }
 
     if (!selectedTool) return;
 
     const stage = e.target.getStage();
     const pointer = stage.getPointerPosition();
-
-    // Deselect text tool if clicking outside the stage or on an existing element (handled later)
-    // if (selectedTool === 'text' && e.target !== stage) {
-    //   setSelectedTool(null);
-    //   return;
-    // }
 
     const adjustedPointer = {
       x: (pointer.x - stage.x()) / scale,
@@ -276,6 +295,32 @@ function App() {
       setSelectedTool(null); // Deselect text tool immediately
 
       // Add text creation to history
+      setTimeout(() => {
+        saveToHistory(); // Save after state updates
+      }, 0);
+    } else if (selectedTool === 'note') {
+      isDrawing.current = false; // Don't treat note insertion as drawing
+      const newNote: NoteLayerType = {
+        id: Date.now().toString(), // Simple unique ID
+        x: adjustedPointer.x,
+        y: adjustedPointer.y,
+        text: '', // Set initial text to empty string
+        fontSize: textFormatOptions.fontSize / scale,
+        width: 200 / scale, // Notes are larger than text boxes
+        height: 150 / scale,
+        styleId: selectedNoteStyle,
+        isEditing: true,
+        fontFamily: textFormatOptions.fontFamily,
+        isBold: textFormatOptions.isBold,
+        isItalic: textFormatOptions.isItalic,
+        isUnderline: textFormatOptions.isUnderline,
+      };
+
+      setNoteLayers(prev => [...prev, newNote]);
+      setEditingNoteId(newNote.id); // Set the new note as editing
+      setSelectedTool(null); // Deselect note tool immediately
+
+      // Add note creation to history
       setTimeout(() => {
         saveToHistory(); // Save after state updates
       }, 0);
@@ -441,9 +486,17 @@ function App() {
   // Add the handleResetCanvas function here
   const handleResetCanvas = () => {
     setLines([]); // Clear all drawings
-    // Optionally, reset history if you want a clean slate
-    // setHistory([]);
-    // setHistoryIndex(-1);
+    setTextLayers([]); // Clear all text layers
+    setNoteLayers([]); // Clear all notes
+    
+    // Reset history for a clean slate
+    setHistory([]);
+    setHistoryIndex(-1);
+    
+    // Reset any active editing states
+    setEditingTextLayerId(null);
+    setEditingNoteId(null);
+    
     handleCenterCanvas(); // Center the canvas
   };
 
@@ -473,6 +526,119 @@ function App() {
     }
   };
 
+  // Function to handle note style changes
+  const handleNoteStyleChange = (styleId: string) => {
+    setSelectedNoteStyle(styleId);
+    
+    // If editing a note, apply the style change
+    if (editingNoteId) {
+      setNoteLayers(prev => 
+        prev.map(note => note.id === editingNoteId ? { ...note, styleId } : note)
+      );
+    }
+  };
+
+  // Function to find the note style by ID
+  const getNoteStyle = (styleId: string): NoteStyle => {
+    return NOTE_STYLES.find(style => style.id === styleId) || NOTE_STYLES[0];
+  };
+  
+  // Render notes function
+  const renderNotes = () => {
+    return noteLayers.map((note) => (
+      !note.isEditing && (
+        <Group
+          key={note.id}
+          x={note.x}
+          y={note.y}
+          width={note.width}
+          height={note.height}
+          draggable={selectedTool === null}
+          onDragStart={(e) => {
+            // Set cursor to grabbing during drag
+            const stage = e.target.getStage();
+            if (stage) {
+              stage.container().style.cursor = 'grabbing';
+            }
+          }}
+          onDragEnd={(e) => {
+            // Update the note's position in state
+            const newPos = e.target.position();
+            setNoteLayers(prev =>
+              prev.map(n => n.id === note.id ? 
+                { ...n, x: newPos.x, y: newPos.y } : n
+              )
+            );
+            
+            // Reset cursor
+            const stage = e.target.getStage();
+            if (stage) {
+              stage.container().style.cursor = 'default';
+            }
+            
+            // Save to history after position update
+            setTimeout(() => {
+              saveToHistory();
+            }, 0);
+          }}
+          onDblClick={() => {
+            // Enable editing on double-click
+            setNoteLayers(prev =>
+              prev.map(n => n.id === note.id ? { ...n, isEditing: true } : n)
+            );
+            setEditingNoteId(note.id);
+            // Update text formatting options
+            setTextFormatOptions({
+              fontSize: note.fontSize * scale,
+              fontFamily: note.fontFamily,
+              isBold: note.isBold,
+              isItalic: note.isItalic,
+              isUnderline: note.isUnderline
+            });
+          }}
+        >
+          {/* Note background */}
+          <Rect
+            width={note.width}
+            height={note.height}
+            fill={getNoteStyle(note.styleId).backgroundColor}
+            stroke={getNoteStyle(note.styleId).borderColor}
+            strokeWidth={1}
+            shadowColor="rgba(0,0,0,0.3)"
+            shadowBlur={5}
+            shadowOffsetX={2}
+            shadowOffsetY={2}
+            cornerRadius={3}
+          />
+          {/* Note header */}
+          <Rect
+            width={note.width}
+            height={8}
+            fill={getNoteStyle(note.styleId).accentColor}
+            cornerRadius={[3, 3, 0, 0]}
+          />
+          {/* Note text */}
+          <Text
+            x={10}
+            y={15}
+            text={note.text}
+            fontSize={note.fontSize}
+            fontFamily={note.fontFamily}
+            fill="#333333"
+            width={note.width - 20}
+            height={note.height - 25}
+            fontStyle={
+              (note.isBold && note.isItalic) ? 'bold italic' : 
+              note.isBold ? 'bold' : 
+              note.isItalic ? 'italic' : 'normal'
+            }
+            textDecoration={note.isUnderline ? 'underline' : ''}
+          />
+        </Group>
+      )
+    ));
+  };
+
   return (
     <div
       ref={containerRef}
@@ -500,6 +666,8 @@ function App() {
         onEraserSizeChange={setEraserSize}
         textFormatOptions={textFormatOptions}
         onTextFormatOptionsChange={handleTextFormatOptionsChange}
+        selectedNoteStyle={selectedNoteStyle}
+        onNoteStyleChange={handleNoteStyleChange}
         onUndo={handleUndo}
         onRedo={handleRedo}
         canUndo={historyIndex >= 0}
@@ -582,6 +750,34 @@ function App() {
                       textLayer.isItalic ? 'italic' : 'normal'
                     }
                     textDecoration={textLayer.isUnderline ? 'underline' : ''}
+                    draggable={selectedTool === null}
+                    onDragStart={(e) => {
+                      // Set cursor to grabbing during drag
+                      const stage = e.target.getStage();
+                      if (stage) {
+                        stage.container().style.cursor = 'grabbing';
+                      }
+                    }}
+                    onDragEnd={(e) => {
+                      // Update the text layer's position in state
+                      const newPos = e.target.position();
+                      setTextLayers(prev =>
+                        prev.map(t => t.id === textLayer.id ? 
+                          { ...t, x: newPos.x, y: newPos.y } : t
+                        )
+                      );
+                      
+                      // Reset cursor
+                      const stage = e.target.getStage();
+                      if (stage) {
+                        stage.container().style.cursor = 'default';
+                      }
+                      
+                      // Save to history after position update
+                      setTimeout(() => {
+                        saveToHistory();
+                      }, 0);
+                    }}
                     onDblClick={() => {
                       // Enable editing on double-click
                       setTextLayers(prev =>
@@ -597,10 +793,13 @@ function App() {
                         isUnderline: textLayer.isUnderline
                       });
                     }}
-                    // TODO: Add drag handling for text later
                   />
                 )
               ))}
+            </Layer>
+            {/* Layer for rendering notes */}
+            <Layer>
+              {renderNotes()}
             </Layer>
           </Stage>
         </div>
@@ -617,7 +816,7 @@ function App() {
         />
       )}
 
-      {/* Textarea for editing */}
+      {/* Textarea for editing text layers */}
       {editingTextLayerId && (() => {
         const textLayer = textLayers.find(t => t.id === editingTextLayerId);
         if (!textLayer) return null;
@@ -711,6 +910,124 @@ function App() {
             }}
             autoFocus // Focus the textarea immediately
           />
+        );
+      })()}
+
+      {/* Textarea for editing notes */}
+      {editingNoteId && (() => {
+        const note = noteLayers.find(n => n.id === editingNoteId);
+        if (!note) return null;
+
+        // Calculate position and size on screen considering stage transform
+        const textareaX = (note.x * scale + stagePosition.x);
+        const textareaY = (note.y * scale + stagePosition.y);
+        const textareaFontSize = note.fontSize * scale;
+        const noteStyle = getNoteStyle(note.styleId);
+
+        const handleNoteTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+          const newText = e.target.value;
+          setNoteLayers(prev => 
+            prev.map(n => n.id === editingNoteId ? { ...n, text: newText } : n)
+          );
+        };
+
+        const finishNoteEditing = () => {
+          // Store the current dimensions of the textarea
+          const textarea = document.querySelector('textarea.note-textarea');
+          if (textarea) {
+            const width = textarea.clientWidth / scale;
+            const height = textarea.clientHeight / scale;
+            
+            setNoteLayers(prev =>
+              prev.map(n => n.id === editingNoteId ? 
+                { ...n, isEditing: false, width, height } : n)
+            );
+          } else {
+            setNoteLayers(prev =>
+              prev.map(n => n.id === editingNoteId ? { ...n, isEditing: false } : n)
+            );
+          }
+          setEditingNoteId(null);
+          
+          // Add note update to history
+          setTimeout(() => {
+            saveToHistory();
+          }, 0);
+        };
+
+        const handleNoteKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault(); // Prevent newline
+            finishNoteEditing();
+          } else if (e.key === 'Escape') {
+            finishNoteEditing();
+          } else if (e.key === 'Delete' && note.text === '') {
+            // Delete empty note
+            setNoteLayers(prev => prev.filter(n => n.id !== editingNoteId));
+            setEditingNoteId(null);
+            
+            // Add deletion to history
+            setTimeout(() => {
+              saveToHistory();
+            }, 0);
+          }
+        };
+
+        return (
+          <div
+            style={{
+              position: 'absolute',
+              left: `${textareaX}px`,
+              top: `${textareaY}px`,
+              width: `${note.width * scale}px`,
+              height: `${note.height * scale}px`,
+              borderRadius: '3px',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+              overflow: 'hidden',
+              zIndex: 11,
+            }}
+          >
+            {/* Note header */}
+            <div
+              style={{
+                width: '100%',
+                height: '20px',
+                backgroundColor: noteStyle.accentColor,
+                borderTopLeftRadius: '3px',
+                borderTopRightRadius: '3px',
+              }}
+            ></div>
+            
+            {/* Note textarea */}
+            <textarea
+              className="note-textarea"
+              value={note.text}
+              onChange={handleNoteTextChange}
+              onBlur={finishNoteEditing}
+              onKeyDown={handleNoteKeyDown}
+              style={{
+                width: '100%',
+                height: 'calc(100% - 20px)',
+                border: 'none',
+                padding: '10px',
+                margin: '0',
+                overflow: 'hidden',
+                background: noteStyle.backgroundColor,
+                outline: 'none',
+                resize: 'both',
+                fontSize: `${textareaFontSize}px`,
+                lineHeight: '1.4',
+                fontFamily: note.fontFamily,
+                color: '#333333',
+                fontWeight: note.isBold ? 'bold' : 'normal',
+                fontStyle: note.isItalic ? 'italic' : 'normal',
+                textDecoration: note.isUnderline ? 'underline' : 'none',
+                boxSizing: 'border-box',
+                whiteSpace: 'pre-wrap',
+              }}
+              autoFocus
+            />
+          </div>
         );
       })()}
     </div>
