@@ -72,7 +72,7 @@ const generatePencilCursor = (color: string) => {
 const INITIAL_SCALE = 1;
 const INITIAL_POSITION = { x: 0, y: 0 };
 
-function App() {
+function Canvas() {
   const [lines, setLines] = useState<LineType[]>([]);
   const [textLayers, setTextLayers] = useState<TextLayerType[]>([]); // State for text layers
   const [noteLayers, setNoteLayers] = useState<NoteLayerType[]>([]); // State for note layers
@@ -210,11 +210,26 @@ function App() {
 
   useEffect(() => {
     const handleResize = () => {
-      setWindowSize({
-        width: window.innerWidth,
-        height: window.innerHeight
-      });
+      if (containerRef.current) {
+        // Get the actual container size instead of the window size
+        const containerWidth = containerRef.current.clientWidth;
+        const containerHeight = containerRef.current.clientHeight;
+        
+        setWindowSize({
+          width: containerWidth,
+          height: containerHeight
+        });
+      } else {
+        // Fallback to window size if container ref isn't available
+        setWindowSize({
+          width: window.innerWidth,
+          height: window.innerHeight
+        });
+      }
     };
+
+    // Call once to set initial size
+    handleResize();
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -643,11 +658,13 @@ function App() {
     <div
       ref={containerRef}
       style={{
-        position: 'fixed',
+        position: 'absolute',
         top: 0,
         left: 0,
-        width: '100vw',
-        height: '100vh',
+        right: 0,
+        bottom: 0,
+        width: '100%',
+        height: '100%',
         overflow: 'hidden',
         margin: 0,
         padding: 0,
@@ -680,129 +697,133 @@ function App() {
       />
       <div
         style={{
-          width: '100%',
-          height: '100%',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0, 
           overflow: 'hidden',
           maskImage: 'radial-gradient(ellipse at center, rgba(0,0,0,1) 60%, rgba(0,0,0,0) 100%)',
           WebkitMaskImage: 'radial-gradient(ellipse at center, rgba(0,0,0,1) 60%, rgba(0,0,0,0) 100%)',
         }}
       >
-        <div style={{ width: '100%', height: '100%' }}>
-          <Stage
-            ref={stageRef}
-            width={windowSize.width}
-            height={windowSize.height}
-            onMouseDown={handleMouseDown}
-            onMousemove={handleMouseMove}
-            onMouseup={handleMouseUp}
-            onWheel={handleWheel}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            onTouchStart={handleMouseDown} // Add touch handler
-            onTouchMove={handleMouseMove}  // Add touch handler
-            onTouchEnd={handleMouseUp}    // Add touch handler
-            scaleX={scale}
-            scaleY={scale}
-            x={stagePosition.x}
-            y={stagePosition.y}
-            draggable={!(selectedTool === 'pencil' || selectedTool === 'eraser')} // Only draggable if NOT pencil/eraser
-            style={{ backgroundColor: theme.canvas }}
-          >
-            <Layer>
-              {gridType === 'dots' ? (
-                <Dot
-                  scale={scale}
-                  stageWidth={windowSize.width}
-                  stageHeight={windowSize.height}
-                  stageX={stagePosition.x}
-                  stageY={stagePosition.y}
-                />
-              ) : (
-                <Grid
-                  scale={scale}
-                  stageWidth={windowSize.width}
-                  stageHeight={windowSize.height}
-                  stageX={stagePosition.x}
-                  stageY={stagePosition.y}
-                />
-              )}
-            </Layer>
-            <Layer>{renderLines()}</Layer>
-            {/* Layer for rendering text */}
-            <Layer>
-              {textLayers.map((textLayer) => (
-                // Only render Konva.Text if not currently editing
-                !textLayer.isEditing && (
-                  <Text
-                    key={textLayer.id}
-                    id={textLayer.id}
-                    x={textLayer.x}
-                    y={textLayer.y}
-                    text={textLayer.text}
-                    fontSize={textLayer.fontSize}
-                    fill={textLayer.fill}
-                    width={textLayer.width}
-                    height={textLayer.height}
-                    fontFamily={textLayer.fontFamily}
-                    fontStyle={
-                      (textLayer.isBold && textLayer.isItalic) ? 'bold italic' : 
-                      textLayer.isBold ? 'bold' : 
-                      textLayer.isItalic ? 'italic' : 'normal'
+        <Stage
+          ref={stageRef}
+          width={windowSize.width}
+          height={windowSize.height}
+          onMouseDown={handleMouseDown}
+          onMousemove={handleMouseMove}
+          onMouseup={handleMouseUp}
+          onWheel={handleWheel}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onTouchStart={handleMouseDown}
+          onTouchMove={handleMouseMove}
+          onTouchEnd={handleMouseUp}
+          scaleX={scale}
+          scaleY={scale}
+          x={stagePosition.x}
+          y={stagePosition.y}
+          draggable={!(selectedTool === 'pencil' || selectedTool === 'eraser')}
+          style={{ 
+            backgroundColor: theme.canvas,
+            width: '100%',
+            height: '100%'
+          }}
+        >
+          <Layer>
+            {gridType === 'dots' ? (
+              <Dot
+                scale={scale}
+                stageWidth={windowSize.width}
+                stageHeight={windowSize.height}
+                stageX={stagePosition.x}
+                stageY={stagePosition.y}
+              />
+            ) : (
+              <Grid
+                scale={scale}
+                stageWidth={windowSize.width}
+                stageHeight={windowSize.height}
+                stageX={stagePosition.x}
+                stageY={stagePosition.y}
+              />
+            )}
+          </Layer>
+          <Layer>{renderLines()}</Layer>
+          {/* Layer for rendering text */}
+          <Layer>
+            {textLayers.map((textLayer) => (
+              // Only render Konva.Text if not currently editing
+              !textLayer.isEditing && (
+                <Text
+                  key={textLayer.id}
+                  id={textLayer.id}
+                  x={textLayer.x}
+                  y={textLayer.y}
+                  text={textLayer.text}
+                  fontSize={textLayer.fontSize}
+                  fill={textLayer.fill}
+                  width={textLayer.width}
+                  height={textLayer.height}
+                  fontFamily={textLayer.fontFamily}
+                  fontStyle={
+                    (textLayer.isBold && textLayer.isItalic) ? 'bold italic' : 
+                    textLayer.isBold ? 'bold' : 
+                    textLayer.isItalic ? 'italic' : 'normal'
+                  }
+                  textDecoration={textLayer.isUnderline ? 'underline' : ''}
+                  draggable={selectedTool === null}
+                  onDragStart={(e) => {
+                    // Set cursor to grabbing during drag
+                    const stage = e.target.getStage();
+                    if (stage) {
+                      stage.container().style.cursor = 'grabbing';
                     }
-                    textDecoration={textLayer.isUnderline ? 'underline' : ''}
-                    draggable={selectedTool === null}
-                    onDragStart={(e) => {
-                      // Set cursor to grabbing during drag
-                      const stage = e.target.getStage();
-                      if (stage) {
-                        stage.container().style.cursor = 'grabbing';
-                      }
-                    }}
-                    onDragEnd={(e) => {
-                      // Update the text layer's position in state
-                      const newPos = e.target.position();
-                      setTextLayers(prev =>
-                        prev.map(t => t.id === textLayer.id ? 
-                          { ...t, x: newPos.x, y: newPos.y } : t
-                        )
-                      );
-                      
-                      // Reset cursor
-                      const stage = e.target.getStage();
-                      if (stage) {
-                        stage.container().style.cursor = 'default';
-                      }
-                      
-                      // Save to history after position update
-                      setTimeout(() => {
-                        saveToHistory();
-                      }, 0);
-                    }}
-                    onDblClick={() => {
-                      // Enable editing on double-click
-                      setTextLayers(prev =>
-                        prev.map(t => t.id === textLayer.id ? { ...t, isEditing: true } : t)
-                      );
-                      setEditingTextLayerId(textLayer.id);
-                      // Update text formatting options when starting to edit
-                      setTextFormatOptions({
-                        fontSize: textLayer.fontSize * scale, // Convert back to screen size
-                        fontFamily: textLayer.fontFamily,
-                        isBold: textLayer.isBold,
-                        isItalic: textLayer.isItalic,
-                        isUnderline: textLayer.isUnderline
-                      });
-                    }}
-                  />
-                )
-              ))}
-            </Layer>
-            {/* Layer for rendering notes */}
-            <Layer>
-              {renderNotes()}
-            </Layer>
-          </Stage>
-        </div>
+                  }}
+                  onDragEnd={(e) => {
+                    // Update the text layer's position in state
+                    const newPos = e.target.position();
+                    setTextLayers(prev =>
+                      prev.map(t => t.id === textLayer.id ? 
+                        { ...t, x: newPos.x, y: newPos.y } : t)
+                    );
+                    
+                    // Reset cursor
+                    const stage = e.target.getStage();
+                    if (stage) {
+                      stage.container().style.cursor = 'default';
+                    }
+                    
+                    // Save to history after position update
+                    setTimeout(() => {
+                      saveToHistory();
+                    }, 0);
+                  }}
+                  onDblClick={() => {
+                    // Enable editing on double-click
+                    setTextLayers(prev =>
+                      prev.map(t => t.id === textLayer.id ? { ...t, isEditing: true } : t)
+                    );
+                    setEditingTextLayerId(textLayer.id);
+                    // Update text formatting options when starting to edit
+                    setTextFormatOptions({
+                      fontSize: textLayer.fontSize * scale, // Convert back to screen size
+                      fontFamily: textLayer.fontFamily,
+                      isBold: textLayer.isBold,
+                      isItalic: textLayer.isItalic,
+                      isUnderline: textLayer.isUnderline
+                    });
+                  }}
+                />
+              )
+            ))}
+          </Layer>
+          {/* Layer for rendering notes */}
+          <Layer>
+            {renderNotes()}
+          </Layer>
+        </Stage>
       </div>
       
       {/* Render Zoom Control Panel conditionally */}
@@ -1034,4 +1055,12 @@ function App() {
   );
 }
 
-export default App;
+export default Canvas;
+
+// Export interfaces and types that might be needed in other components
+export type {
+  LineType,
+  TextLayerType,
+  NoteLayerType,
+  HistoryState
+};

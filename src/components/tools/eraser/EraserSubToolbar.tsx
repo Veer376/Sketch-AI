@@ -13,6 +13,10 @@ interface EraserSubToolbarProps {
   toolButtonY: number;
 }
 
+// Use the same constants across all subtoolbars for consistency
+const SUBTOOLBAR_WIDTH = 280;
+const CONNECTOR_SIZE = 10;
+
 const EraserSubToolbar: React.FC<EraserSubToolbarProps> = ({
   isVisible,
   size,
@@ -24,7 +28,6 @@ const EraserSubToolbar: React.FC<EraserSubToolbarProps> = ({
   toolButtonY,
 }) => {
   const theme = getCurrentTheme();
-  const estimatedWidth = 150;
 
   if (!isVisible) {
     return null;
@@ -34,20 +37,48 @@ const EraserSubToolbar: React.FC<EraserSubToolbarProps> = ({
     onSizeChange(newSize);
   };
 
+  // Calculate the toolbar vertical midpoint - accurately point to the center of the button
+  const toolHeight = 36; // Standard tool button height
+  const toolVerticalCenter = toolButtonY + (toolHeight / 2);
+
   const subToolbarStyle: React.CSSProperties = {
     position: 'absolute',
-    top: `${toolButtonY}px`,
+    top: `${Math.max(20, toolVerticalCenter - 75)}px`, // Center with minimum top margin
     left: snapSide === 'left' 
-      ? `${parentPosition.x + parentWidth + 10}px`
-      : `${parentPosition.x - estimatedWidth - 10}px`,
+      ? `${parentPosition.x + parentWidth + 15}px` // Position to the right of parent
+      : `${parentPosition.x - SUBTOOLBAR_WIDTH - 15}px`, // Position to the left with consistent width
     backgroundColor: theme.toolbar,
     boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+    padding: '15px',
     borderRadius: '8px',
-    padding: '12px',
+    zIndex: 9, 
     display: 'flex',
     flexDirection: 'column',
-    gap: '10px',
-    zIndex: 9,
+    gap: '20px',
+    width: `${SUBTOOLBAR_WIDTH - 30}px`, // Account for padding
+  };
+
+  // Connector style - the small triangle that points to the tool
+  const connectorStyle: React.CSSProperties = {
+    position: 'absolute',
+    width: '0',
+    height: '0',
+    // Position connector at exact tool center height
+    ...(snapSide === 'left'
+      ? {
+          left: '-10px',
+          top: `${toolVerticalCenter - parseInt(subToolbarStyle.top as string, 10)}px`,
+          borderTop: `${CONNECTOR_SIZE}px solid transparent`,
+          borderBottom: `${CONNECTOR_SIZE}px solid transparent`,
+          borderRight: `${CONNECTOR_SIZE}px solid ${theme.toolbar}`,
+        }
+      : {
+          right: '-10px',
+          top: `${toolVerticalCenter - parseInt(subToolbarStyle.top as string, 10)}px`,
+          borderTop: `${CONNECTOR_SIZE}px solid transparent`,
+          borderBottom: `${CONNECTOR_SIZE}px solid transparent`,
+          borderLeft: `${CONNECTOR_SIZE}px solid ${theme.toolbar}`,
+        }),
   };
 
   return (
@@ -56,7 +87,13 @@ const EraserSubToolbar: React.FC<EraserSubToolbarProps> = ({
       onMouseEnter={() => onHoverChange(true)}
       onMouseLeave={() => onHoverChange(false)}
     >
-      <h3 style={{ margin: '0 0 8px', color: theme.toolbarButtonText, fontSize: '14px' }}> Eraser </h3>
+      {/* Visual connector to the tool */}
+      <div style={connectorStyle}></div>
+      
+      <div style={{ padding: '5px', textAlign: 'center', color: theme.toolbarText, fontWeight: 'bold' }}>
+        Eraser
+      </div>
+      
       <DiscreteSliderControl
         label="Size"
         value={size}

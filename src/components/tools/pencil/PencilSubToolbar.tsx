@@ -29,6 +29,10 @@ export interface PencilSubToolbarProps {
   toolButtonY: number; // Add prop for specific tool Y
 }
 
+// Consistent width for all subtoolbars
+const SUBTOOLBAR_WIDTH = 280;
+const CONNECTOR_SIZE = 10;
+
 const PencilSubToolbar: React.FC<PencilSubToolbarProps> = ({ 
   isVisible, 
   thickness = 2, 
@@ -114,14 +118,17 @@ const PencilSubToolbar: React.FC<PencilSubToolbarProps> = ({
   };
   // --- End Edit/Save Handler ---
 
+  // Calculate the toolbar vertical midpoint - more accurately point to the center of the button
+  const toolHeight = 36; // Standard tool button height
+  const toolVerticalCenter = toolButtonY + (toolHeight / 2);
+
   // Calculate dynamic position based on parent
   const subToolbarStyle: React.CSSProperties = {
     position: 'absolute',
-    top: `${toolButtonY}px`, // Use the specific tool button Y position
+    top: `${Math.max(20, toolVerticalCenter - 150)}px`, // Center the subtoolbar vertically with a minimum top margin
     left: snapSide === 'left' 
-      ? `${parentPosition.x + parentWidth + 10}px` // Position to the right of parent
-      : `${parentPosition.x - 210}px`, // Position to the left (approx width 200px + 10 padding)
-    // transform: 'translateY(-50%)', // Remove Y transform as top is now absolute
+      ? `${parentPosition.x + parentWidth + 15}px` // Position to the right of parent
+      : `${parentPosition.x - SUBTOOLBAR_WIDTH - 15}px`, // Position to the left with consistent width
     backgroundColor: theme.toolbar,
     boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
     padding: '15px',
@@ -129,8 +136,31 @@ const PencilSubToolbar: React.FC<PencilSubToolbarProps> = ({
     zIndex: 9, // Keep below main toolbar if overlapping temporarily
     display: 'flex',
     flexDirection: 'column',
-    gap: '15px',
-    minWidth: '200px',
+    gap: '20px',
+    width: `${SUBTOOLBAR_WIDTH - 30}px`, // Account for padding
+  };
+
+  // Connector style - the small triangle that points to the tool
+  const connectorStyle: React.CSSProperties = {
+    position: 'absolute',
+    width: '0',
+    height: '0',
+    // Position connector at exact tool center height
+    ...(snapSide === 'left'
+      ? {
+          left: '-10px',
+          top: `${toolVerticalCenter - parseInt(subToolbarStyle.top as string, 10)}px`,
+          borderTop: `${CONNECTOR_SIZE}px solid transparent`,
+          borderBottom: `${CONNECTOR_SIZE}px solid transparent`,
+          borderRight: `${CONNECTOR_SIZE}px solid ${theme.toolbar}`,
+        }
+      : {
+          right: '-10px',
+          top: `${toolVerticalCenter - parseInt(subToolbarStyle.top as string, 10)}px`,
+          borderTop: `${CONNECTOR_SIZE}px solid transparent`,
+          borderBottom: `${CONNECTOR_SIZE}px solid transparent`,
+          borderLeft: `${CONNECTOR_SIZE}px solid ${theme.toolbar}`,
+        }),
   };
   
   return (
@@ -139,6 +169,9 @@ const PencilSubToolbar: React.FC<PencilSubToolbarProps> = ({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
+      {/* Visual connector to the tool */}
+      <div style={connectorStyle}></div>
+      
       <div style={{ padding: '5px', textAlign: 'center', color: theme.toolbarText, fontWeight: 'bold' }}>
         Pen
       </div>

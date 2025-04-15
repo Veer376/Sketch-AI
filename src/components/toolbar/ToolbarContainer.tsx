@@ -85,13 +85,15 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
   const gridSubToolbarHoverTimeoutRef = useRef<number | null>(null); // Add grid subtoolbar timeout ref
   
   // Toolbar position, dragging, and snapping state
-  const initialY = window.innerHeight / 7; 
-  const [position, setPosition] = useState({ x: 10, y: initialY }); 
+  const initialY = window.innerHeight / 7;
+  // Calculate initial X to position the toolbar on the right side of the screen 
+  const initialX = window.innerWidth - 66; // 56px toolbar width + 10px padding
+  const [position, setPosition] = useState({ x: initialX, y: initialY }); 
   const [isDragging, setIsDragging] = useState(false);
   const dragStartOffset = useRef({ x: 0, y: 0 });
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [toolbarWidth, setToolbarWidth] = useState(0); // State for toolbar width
-  const [snapSide, setSnapSide] = useState<'left' | 'right'>('left'); // State for snap side
+  const [snapSide, setSnapSide] = useState<'left' | 'right'>('right'); // Default to right
   
   // Refs for tool buttons
   const pencilToolRef = useRef<HTMLDivElement>(null);
@@ -361,7 +363,7 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
     setPosition({ x: newX, y: newY });
   }, [isDragging]);
 
-  // Updated MouseUp handler to set snapSide
+  // Updated MouseUp handler to always snap to the right side
   const handleMouseUp = useCallback((e: MouseEvent) => {
     if (!isDragging) return;
     setIsDragging(false);
@@ -371,16 +373,12 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
     const windowHeight = window.innerHeight;
     const finalX = position.x;
     const finalY = position.y;
-    const dropCenterX = finalX + toolbarRect.width / 2;
     const snapPadding = 10;
 
-    // Determine closest horizontal edge and target X
-    const snapLeftX = snapPadding;
+    // Always snap to the right side only
     const snapRightX = windowWidth - toolbarRect.width - snapPadding;
-    const isLeftCloser = dropCenterX < windowWidth / 2;
-    const targetX = isLeftCloser ? snapLeftX : snapRightX;
-    const currentSnapSide = isLeftCloser ? 'left' : 'right';
-    setSnapSide(currentSnapSide); // Set the snap side state
+    const targetX = snapRightX;
+    setSnapSide('right'); // Always set to right
 
     // Clamp and set target Y
     const clampedY = Math.max(snapPadding, Math.min(finalY, windowHeight - toolbarRect.height - snapPadding));
@@ -398,8 +396,7 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
       (value) => setPosition(prev => ({ ...prev, y: value })),
       0.7, 10
     );
-
-  }, [isDragging, position.x, position.y]); 
+  }, [isDragging, position.x, position.y]);
 
   // Effect to add/remove global listeners
   useEffect(() => {
@@ -548,10 +545,11 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
   );
 };
 
-// Add Zoom Control Button component
+// ZoomControlButton component
 const ZoomControlButton: React.FC<{ onClick: () => void }> = ({ onClick }) => {
   const theme = getCurrentTheme();
   const buttonRef = useRef<HTMLDivElement>(null);
+  const [isHovered, setIsHovered] = useState(false);
 
   const handleClick = () => {
     if (buttonRef.current) { // Check if ref exists
@@ -560,22 +558,51 @@ const ZoomControlButton: React.FC<{ onClick: () => void }> = ({ onClick }) => {
     onClick();
   };
   
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+  };
+  
+  // Calculate dynamic styles
+  const getButtonStyles = () => {
+    const baseStyles: React.CSSProperties = {
+      cursor: 'pointer',
+      padding: '8px',
+      borderRadius: '6px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: theme.toolbarButtonText,
+      backgroundColor: theme.toolbarButton,
+      width: '36px', 
+      height: '36px',
+      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+      position: 'relative',
+      zIndex: isHovered ? 2 : 1,
+    };
+    
+    // Apply zoom effect when hovered
+    if (isHovered) {
+      return {
+        ...baseStyles,
+        transform: 'scale(1.15)',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+      };
+    }
+    
+    return baseStyles;
+  };
+  
   return (
     <div 
       ref={buttonRef}
       onClick={handleClick}
-      style={{
-        cursor: 'pointer',
-        padding: '8px',
-        borderRadius: '6px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        color: theme.toolbarButtonText,
-        backgroundColor: theme.toolbarButton,
-        width: '36px', 
-        height: '36px' 
-      }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      style={getButtonStyles()}
       title="Zoom Controls"
     >
       {/* Simple Zoom Icon Placeholder */}

@@ -23,12 +23,15 @@ const PencilTool: React.FC<PencilToolProps> = ({
 }) => {
   const theme = getCurrentTheme();
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const [isHovered, setIsHovered] = useState(false);
   
   const handleMouseEnter = () => {
+    setIsHovered(true);
     onHoverChange?.(true);
   };
   
   const handleMouseLeave = () => {
+    setIsHovered(false);
     onHoverChange?.(false);
   };
   
@@ -40,6 +43,39 @@ const PencilTool: React.FC<PencilToolProps> = ({
     onSelect();
   };
   
+  // Calculate dynamic styles
+  const getButtonStyles = () => {
+    const baseStyles: React.CSSProperties = {
+      backgroundColor: isSelected ? theme.toolbarButtonSelected : theme.toolbarButton,
+      color: isSelected ? theme.toolbarButtonSelectedText : theme.toolbarButtonText,
+      border: 'none',
+      padding: '10px',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      marginBottom: '10px',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: '40px',
+      outline: 'none', 
+      height: '40px',
+      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+      position: 'relative',
+      zIndex: isHovered ? 2 : 1,
+    };
+    
+    // Apply zoom effect when hovered
+    if (isHovered) {
+      return {
+        ...baseStyles,
+        transform: 'scale(1.15)',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+      };
+    }
+    
+    return baseStyles;
+  };
+  
   return (
     <button
       ref={buttonRef}
@@ -47,21 +83,7 @@ const PencilTool: React.FC<PencilToolProps> = ({
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      style={{
-        backgroundColor: isSelected ? theme.toolbarButtonSelected : theme.toolbarButton,
-        color: isSelected ? theme.toolbarButtonSelectedText : theme.toolbarButtonText,
-        border: 'none',
-        padding: '10px',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        marginBottom: '10px',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: '40px',
-        outline: 'none', 
-        height: '40px',
-      }}
+      style={getButtonStyles()}
     >
       <PencilIcon />
     </button>

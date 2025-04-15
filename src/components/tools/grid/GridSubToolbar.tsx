@@ -14,6 +14,10 @@ interface GridSubToolbarProps {
   toolButtonY: number;
 }
 
+// Use the same constants across all subtoolbars for consistency
+const SUBTOOLBAR_WIDTH = 280;
+const CONNECTOR_SIZE = 10;
+
 // SVG icon for dot grid
 const DotGridIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -52,7 +56,6 @@ const GridSubToolbar: React.FC<GridSubToolbarProps> = ({
   toolButtonY,
 }) => {
   const theme = getCurrentTheme();
-  const estimatedWidth = 140;
 
   if (!isVisible) return null;
 
@@ -71,21 +74,48 @@ const GridSubToolbar: React.FC<GridSubToolbarProps> = ({
     transition: 'all 0.2s ease',
   });
 
+  // Calculate the toolbar vertical midpoint - accurately point to the center of the button
+  const toolHeight = 36; // Standard tool button height
+  const toolVerticalCenter = toolButtonY + (toolHeight / 2);
+
   const subToolbarStyle: React.CSSProperties = {
     position: 'absolute',
-    top: `${toolButtonY}px`,
+    top: `${Math.max(20, toolVerticalCenter - 75)}px`, // Center with minimum top margin
     left: snapSide === 'left' 
-      ? `${parentPosition.x + parentWidth + 10}px`
-      : `${parentPosition.x - estimatedWidth - 10}px`,
+      ? `${parentPosition.x + parentWidth + 15}px` // Position to the right of parent
+      : `${parentPosition.x - SUBTOOLBAR_WIDTH - 15}px`, // Position to the left with consistent width
     backgroundColor: theme.toolbar,
     boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
     padding: '15px',
     borderRadius: '8px',
-    zIndex: 9,
+    zIndex: 9, // Keep below main toolbar if overlapping temporarily
     display: 'flex',
     flexDirection: 'column',
-    gap: '15px',
-    minWidth: '120px',
+    gap: '20px',
+    width: `${SUBTOOLBAR_WIDTH - 30}px`, // Account for padding
+  };
+
+  // Connector style - the small triangle that points to the tool
+  const connectorStyle: React.CSSProperties = {
+    position: 'absolute',
+    width: '0',
+    height: '0',
+    // Position connector at exact tool center height
+    ...(snapSide === 'left'
+      ? {
+          left: '-10px',
+          top: `${toolVerticalCenter - parseInt(subToolbarStyle.top as string, 10)}px`,
+          borderTop: `${CONNECTOR_SIZE}px solid transparent`,
+          borderBottom: `${CONNECTOR_SIZE}px solid transparent`,
+          borderRight: `${CONNECTOR_SIZE}px solid ${theme.toolbar}`,
+        }
+      : {
+          right: '-10px',
+          top: `${toolVerticalCenter - parseInt(subToolbarStyle.top as string, 10)}px`,
+          borderTop: `${CONNECTOR_SIZE}px solid transparent`,
+          borderBottom: `${CONNECTOR_SIZE}px solid transparent`,
+          borderLeft: `${CONNECTOR_SIZE}px solid ${theme.toolbar}`,
+        }),
   };
 
   return (
@@ -94,14 +124,18 @@ const GridSubToolbar: React.FC<GridSubToolbarProps> = ({
       onMouseEnter={() => onHoverChange(true)}
       onMouseLeave={() => onHoverChange(false)}
     >
+      {/* Visual connector to the tool */}
+      <div style={connectorStyle}></div>
+      
       <div style={{ 
+        padding: '5px', 
+        textAlign: 'center', 
         color: theme.toolbarText, 
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginBottom: '5px'
+        fontWeight: 'bold'
       }}>
         Grid Style
       </div>
+      
       <div style={{ 
         display: 'flex', 
         gap: '10px',

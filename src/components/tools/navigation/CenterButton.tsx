@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { getCurrentTheme } from '../../../utils/theme';
 import { bounceUIElement } from '../../../utils/animation';
 
@@ -17,6 +17,7 @@ const CenterIcon = () => (
 const CenterButton: React.FC<CenterButtonProps> = ({ onClick }) => {
   const theme = getCurrentTheme();
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const [isHovered, setIsHovered] = useState(false);
   
   const handleClick = () => {
     // Apply bounce animation when clicked
@@ -26,26 +27,55 @@ const CenterButton: React.FC<CenterButtonProps> = ({ onClick }) => {
     onClick();
   };
   
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+  };
+
+  // Calculate dynamic styles
+  const getButtonStyles = () => {
+    const baseStyles: React.CSSProperties = {
+      backgroundColor: theme.toolbarButton,
+      color: theme.toolbarButtonText,
+      border: 'none',
+      padding: '10px',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      marginBottom: '10px',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: '40px',
+      outline: 'none', 
+      height: '40px',
+      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+      position: 'relative',
+      zIndex: isHovered ? 2 : 1,
+    };
+    
+    // Apply zoom effect when hovered
+    if (isHovered) {
+      return {
+        ...baseStyles,
+        transform: 'scale(1.15)',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+      };
+    }
+    
+    return baseStyles;
+  };
+  
   return (
     <button
       ref={buttonRef}
       title="Center Canvas"
       onClick={handleClick}
-      style={{
-        backgroundColor: theme.toolbarButton,
-        color: theme.toolbarButtonText,
-        border: 'none',
-        padding: '10px',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        marginBottom: '10px',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: '40px',
-        outline: 'none', 
-        height: '40px',
-      }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      style={getButtonStyles()}
     >
       <CenterIcon />
     </button>

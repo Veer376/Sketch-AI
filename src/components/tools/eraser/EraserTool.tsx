@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { getCurrentTheme } from '../../../utils/theme';
 import { bounceUIElement } from '../../../utils/animation';
 
@@ -6,7 +6,7 @@ export interface EraserToolProps {
   isSelected: boolean;
   onSelect: () => void;
   onHoverChange?: (isHovered: boolean) => void;
-  size: number; // Add size prop
+  size: number;
 }
 
 // SVG icon for eraser tool
@@ -22,16 +22,19 @@ const EraserTool: React.FC<EraserToolProps> = ({
   isSelected, 
   onSelect,
   onHoverChange,
-  size // Use size prop
+  size
 }) => {
   const theme = getCurrentTheme();
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const [isHovered, setIsHovered] = useState(false);
   
   const handleMouseEnter = () => {
+    setIsHovered(true);
     onHoverChange?.(true);
   };
   
   const handleMouseLeave = () => {
+    setIsHovered(false);
     onHoverChange?.(false);
   };
 
@@ -43,18 +46,38 @@ const EraserTool: React.FC<EraserToolProps> = ({
     onSelect();
   };
 
-  // Update cursor size dynamically when the eraser is selected
-  /* useEffect(() => {
-    if (isSelected) {
-      document.body.style.cursor = `url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"${size}\" height=\"${size}\" viewBox=\"0 0 ${size} ${size}\"><circle cx=\"${size / 2}\" cy=\"${size / 2}\" r=\"${size / 2}\" fill=\"black\" /></svg>') ${size / 2} ${size / 2}, auto`;
-    } else {
-      document.body.style.cursor = 'default';
-    }
-
-    return () => {
-      document.body.style.cursor = 'default';
+  // Calculate dynamic styles
+  const getButtonStyles = () => {
+    const baseStyles: React.CSSProperties = {
+      backgroundColor: isSelected ? theme.toolbarButtonSelected : theme.toolbarButton,
+      color: isSelected ? theme.toolbarButtonSelectedText : theme.toolbarButtonText,
+      border: 'none',
+      padding: '10px',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      marginBottom: '10px',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: '40px',
+      outline: 'none', 
+      height: '40px',
+      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+      position: 'relative',
+      zIndex: isHovered ? 2 : 1,
     };
-  }, [isSelected, size]); */
+    
+    // Apply zoom effect when hovered
+    if (isHovered) {
+      return {
+        ...baseStyles,
+        transform: 'scale(1.15)',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+      };
+    }
+    
+    return baseStyles;
+  };
   
   return (
     <button
@@ -63,21 +86,7 @@ const EraserTool: React.FC<EraserToolProps> = ({
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      style={{
-        backgroundColor: isSelected ? theme.toolbarButtonSelected : theme.toolbarButton,
-        color: isSelected ? theme.toolbarButtonSelectedText : theme.toolbarButtonText,
-        border: 'none',
-        padding: '10px',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        marginBottom: '10px',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: '40px',
-        outline: 'none', 
-        height: '40px',
-      }}
+      style={getButtonStyles()}
     >
       <EraserIcon />
     </button>

@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { getCurrentTheme } from '../../../utils/theme';
 import { bounceUIElement } from '../../../utils/animation';
 
@@ -22,6 +22,7 @@ const RedoButton: React.FC<RedoButtonProps> = ({
 }) => {
   const theme = getCurrentTheme();
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const [isHovered, setIsHovered] = useState(false);
   
   const handleClick = () => {
     if (disabled) return;
@@ -33,28 +34,57 @@ const RedoButton: React.FC<RedoButtonProps> = ({
     onClick();
   };
   
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+  };
+
+  // Calculate dynamic styles
+  const getButtonStyles = () => {
+    const baseStyles: React.CSSProperties = {
+      backgroundColor: theme.toolbarButton,
+      color: disabled ? theme.toolbarButtonDisabled : theme.toolbarButtonText,
+      border: 'none',
+      padding: '10px',
+      borderRadius: '8px',
+      cursor: disabled ? 'not-allowed' : 'pointer',
+      marginBottom: '10px',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: '40px',
+      outline: 'none', 
+      height: '40px',
+      opacity: disabled ? 0.5 : 1,
+      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+      position: 'relative',
+      zIndex: isHovered ? 2 : 1,
+    };
+    
+    // Apply zoom effect when hovered, but only if not disabled
+    if (isHovered && !disabled) {
+      return {
+        ...baseStyles,
+        transform: 'scale(1.15)',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+      };
+    }
+    
+    return baseStyles;
+  };
+  
   return (
     <button
       ref={buttonRef}
       title="Redo"
       onClick={handleClick}
       disabled={disabled}
-      style={{
-        backgroundColor: theme.toolbarButton,
-        color: disabled ? theme.toolbarButtonDisabled : theme.toolbarButtonText,
-        border: 'none',
-        padding: '10px',
-        borderRadius: '8px',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        marginBottom: '10px',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: '40px',
-        outline: 'none', 
-        height: '40px',
-        opacity: disabled ? 0.5 : 1,
-      }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      style={getButtonStyles()}
     >
       <RedoIcon />
     </button>
