@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Stage, Layer, Line, Text, Group, Rect } from 'react-konva';
 import ToolbarContainer from '../toolbar/ToolbarContainer';
 import { getCurrentTheme } from '../../utils/theme';
@@ -7,11 +7,9 @@ import { springAnimation } from '../../utils/animation';
 import Dot from './backgrounds/Dot';
 import Grid from './backgrounds/Grid';
 import { GridType } from '../tools/grid/GridSubToolbar';
-// import LineGrid from './backgrounds/LineGrid'; // Removed as it seems to cause an error
 import ZoomControlPanel from '../controls/ZoomControlPanel';
 import { TextFormattingOptions } from '../tools/text/TextSubToolbar';
 import { NoteStyle, NOTE_STYLES } from '../tools/note/NoteSubToolbar';
-// import './App.css';
 
 // Define a type for the line objects
 interface LineType {
@@ -61,6 +59,12 @@ interface HistoryState {
   noteLayers: NoteLayerType[];
 }
 
+// Export Canvas ref interface for parent components to use
+export interface CanvasRef {
+  getStage: () => any;
+  captureImage: () => string;
+}
+
 // Create a function to generate a colored pencil cursor
 const generatePencilCursor = (color: string) => {
   return `data:image/svg+xml;base64,${btoa(`<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -72,7 +76,8 @@ const generatePencilCursor = (color: string) => {
 const INITIAL_SCALE = 1;
 const INITIAL_POSITION = { x: 0, y: 0 };
 
-function Canvas() {
+// Convert Canvas to forwardRef component
+const Canvas = forwardRef<CanvasRef>((props, ref) => {
   const [lines, setLines] = useState<LineType[]>([]);
   const [textLayers, setTextLayers] = useState<TextLayerType[]>([]); // State for text layers
   const [noteLayers, setNoteLayers] = useState<NoteLayerType[]>([]); // State for note layers
@@ -106,6 +111,31 @@ function Canvas() {
     isUnderline: false
   });
   const [selectedNoteStyle, setSelectedNoteStyle] = useState<string>('yellow-note'); // Default note style
+
+  // Expose the stageRef to parent components
+  useImperativeHandle(ref, () => ({
+    // Return the Stage instance
+    getStage: () => stageRef.current,
+    
+    // Helper method to capture the canvas as a data URL WITH all drawings and elements
+    captureImage: () => {
+      if (stageRef.current) {
+        // This approach will properly capture all Konva layers including strokes, text, etc.
+        // We're using the toCanvas method which creates a real HTML canvas with all layers
+        const dataURL = stageRef.current.toDataURL({
+          pixelRatio: 2, // Higher quality
+          mimeType: 'image/png',
+          // Make sure we include all the content
+          callback: (img: HTMLImageElement) => {
+            console.log('Canvas exported successfully', img.width, img.height);
+          }
+        });
+        
+        return dataURL;
+      }
+      return null;
+    }
+  }));
 
   const handleToolSelect = (tool: 'pencil' | 'eraser' | 'grid' | 'text' | 'note' | null) => {
     setSelectedTool(tool);
@@ -1053,7 +1083,10 @@ function Canvas() {
       })()}
     </div>
   );
-}
+});
+
+// Add display name for debugging
+Canvas.displayName = 'Canvas';
 
 export default Canvas;
 
