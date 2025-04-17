@@ -52,17 +52,34 @@ interface NoteLayerType {
   isUnderline: boolean;
 }
 
+// Define a type for Gemini response card with additional styling properties
+interface GeminiResponseCardType {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  response: string;
+  isVisible: boolean;
+  animationComplete?: boolean;
+  isResizing?: boolean;
+}
+
 // Define a type for the history state that includes lines, text layers, and notes
 interface HistoryState {
   lines: LineType[];
   textLayers: TextLayerType[];
   noteLayers: NoteLayerType[];
+  geminiResponseCards: GeminiResponseCardType[];
 }
 
 // Export Canvas ref interface for parent components to use
 export interface CanvasRef {
   getStage: () => any;
   captureImage: () => string;
+  addGeminiResponseCard: (response: string, position?: { x: number, y: number }) => string;
+  updateGeminiResponseCard: (id: string, updates: Partial<GeminiResponseCardType>) => void;
+  removeGeminiResponseCard: (id: string) => void;
 }
 
 // Create a function to generate a colored pencil cursor
@@ -81,6 +98,7 @@ const Canvas = forwardRef<CanvasRef>((props, ref) => {
   const [lines, setLines] = useState<LineType[]>([]);
   const [textLayers, setTextLayers] = useState<TextLayerType[]>([]); // State for text layers
   const [noteLayers, setNoteLayers] = useState<NoteLayerType[]>([]); // State for note layers
+  const [geminiResponseCards, setGeminiResponseCards] = useState<GeminiResponseCardType[]>([]); // State for Gemini response cards
   const [editingTextLayerId, setEditingTextLayerId] = useState<string | null>(null); // State to track the ID of the text layer being edited
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null); // State to track the ID of the note being edited
   const [history, setHistory] = useState<HistoryState[]>([]); // Update history to store both lines and text layers
@@ -112,6 +130,28 @@ const Canvas = forwardRef<CanvasRef>((props, ref) => {
   });
   const [selectedNoteStyle, setSelectedNoteStyle] = useState<string>('yellow-note'); // Default note style
 
+  // Effect to handle Gemini response card animations
+  useEffect(() => {
+    // Find any visible cards that need animation
+    const cardsNeedingAnimation = geminiResponseCards.filter(
+      card => card.isVisible && !card.animationComplete
+    );
+    
+    // Set up timers for each card
+    const timers = cardsNeedingAnimation.map(card => {
+      return setTimeout(() => {
+        setGeminiResponseCards(prev => 
+          prev.map(c => c.id === card.id ? { ...c, animationComplete: true } : c)
+        );
+      }, 2000);
+    });
+    
+    // Clean up all timers on unmount or when dependencies change
+    return () => {
+      timers.forEach(timer => clearTimeout(timer));
+    };
+  }, [geminiResponseCards]);
+
   // Expose the stageRef to parent components
   useImperativeHandle(ref, () => ({
     // Return the Stage instance
@@ -134,7 +174,34 @@ const Canvas = forwardRef<CanvasRef>((props, ref) => {
         return dataURL;
       }
       return null;
-    }
+    },
+
+    // Add a Gemini response card to the canvas
+    addGeminiResponseCard: (response: string, position = { x: 0, y: 0 }) => {
+      const newCard: GeminiResponseCardType = {
+        id: Date.now().toString(),
+        x: position.x,
+        y: position.y,
+        width: 300,
+        height: 150,
+        response,
+        isVisible: true,
+      };
+      setGeminiResponseCards((prev) => [...prev, newCard]);
+      return newCard.id;
+    },
+
+    // Update an existing Gemini response card
+    updateGeminiResponseCard: (id: string, updates: Partial<GeminiResponseCardType>) => {
+      setGeminiResponseCards((prev) =>
+        prev.map((card) => (card.id === id ? { ...card, ...updates } : card))
+      );
+    },
+
+    // Remove a Gemini response card from the canvas
+    removeGeminiResponseCard: (id: string) => {
+      setGeminiResponseCards((prev) => prev.filter((card) => card.id !== id));
+    },
   }));
 
   const handleToolSelect = (tool: 'pencil' | 'eraser' | 'grid' | 'text' | 'note' | null) => {
@@ -148,11 +215,12 @@ const Canvas = forwardRef<CanvasRef>((props, ref) => {
   };
 
   const saveToHistory = () => {
-    // Create a new history entry with current lines, text layers, and note layers
+    // Create a new history entry with current lines, text layers, note layers, and Gemini response cards
     const newHistoryEntry: HistoryState = {
       lines: [...lines],
       textLayers: [...textLayers],
       noteLayers: [...noteLayers],
+      geminiResponseCards: [...geminiResponseCards],
     };
     
     // Slice history to remove any future states
@@ -163,7 +231,7 @@ const Canvas = forwardRef<CanvasRef>((props, ref) => {
     setHistoryIndex(newHistory.length - 1);
   };
 
-  // Update handleUndo and handleRedo to include note layers
+  // Update handleUndo and handleRedo to include Gemini response cards
   const handleUndo = () => {
     if (historyIndex > 0) {
       setHistoryIndex(historyIndex - 1);
@@ -172,12 +240,14 @@ const Canvas = forwardRef<CanvasRef>((props, ref) => {
       setLines([...prevState.lines]);
       setTextLayers([...prevState.textLayers]);
       setNoteLayers([...prevState.noteLayers]);
+      setGeminiResponseCards([...prevState.geminiResponseCards]);
     } else if (historyIndex === 0) {
       // Clear everything if we're at the first history state
       setHistoryIndex(-1);
       setLines([]);
       setTextLayers([]);
       setNoteLayers([]);
+      setGeminiResponseCards([]);
     }
   };
 
@@ -191,6 +261,7 @@ const Canvas = forwardRef<CanvasRef>((props, ref) => {
       setLines([...nextState.lines]);
       setTextLayers([...nextState.textLayers]);
       setNoteLayers([...nextState.noteLayers]);
+      setGeminiResponseCards([...nextState.geminiResponseCards]);
     }
   };
 
@@ -533,6 +604,7 @@ const Canvas = forwardRef<CanvasRef>((props, ref) => {
     setLines([]); // Clear all drawings
     setTextLayers([]); // Clear all text layers
     setNoteLayers([]); // Clear all notes
+    setGeminiResponseCards([]); // Clear all Gemini response cards
     
     // Reset history for a clean slate
     setHistory([]);
@@ -683,6 +755,236 @@ const Canvas = forwardRef<CanvasRef>((props, ref) => {
       )
     ));
   };
+
+  // Render Gemini response cards function - with beautiful UI
+  const renderGeminiResponseCards = () => {
+    return geminiResponseCards.map((card) => {
+      if (!card.isVisible) return null;
+      
+      return (
+        <Group
+          key={card.id}
+          x={card.x}
+          y={card.y}
+          width={card.width}
+          height={card.height}
+          draggable={selectedTool === null}
+          onDragStart={(e) => {
+            // Set cursor to grabbing during drag
+            const stage = e.target.getStage();
+            if (stage) {
+              stage.container().style.cursor = 'grabbing';
+            }
+          }}
+          onDragEnd={(e) => {
+            // Update the card's position in state
+            const newPos = e.target.position();
+            setGeminiResponseCards(prev =>
+              prev.map(c => c.id === card.id ? 
+                { ...c, x: newPos.x, y: newPos.y } : c
+              )
+            );
+            
+            // Reset cursor
+            const stage = e.target.getStage();
+            if (stage) {
+              stage.container().style.cursor = 'default';
+            }
+            
+            // Save to history after position update
+            setTimeout(() => {
+              saveToHistory();
+            }, 0);
+          }}
+        >
+          {/* Outer border with gradient - the rounded rectangle with Gemini gradient colors */}
+          <Rect
+            width={card.width}
+            height={card.height}
+            cornerRadius={20}
+            fillLinearGradientStartPoint={{ x: 0, y: 0 }}
+            fillLinearGradientEndPoint={{ x: card.width, y: card.height }}
+            fillLinearGradientColorStops={[
+              0, '#8e2de2',
+              0.5, '#4a00e0',
+              1, '#8e2de2'
+            ]}
+            shadowColor="rgba(0,0,0,0.3)"
+            shadowBlur={10}
+            shadowOffsetX={3}
+            shadowOffsetY={3}
+          />
+          
+          {/* Inner content container - white background with rounded corners */}
+          <Rect
+            x={2}
+            y={2}
+            width={card.width - 4}
+            height={card.height - 4}
+            fill={theme.canvas === '#ffffff' ? 'white' : '#1e1e1e'}
+            cornerRadius={18}
+          />
+          
+          {/* Card title */}
+          <Text
+            x={16}
+            y={15}
+            text="Gemini Response"
+            fontSize={18}
+            fontFamily="Arial"
+            fontStyle="bold"
+            fill={theme.canvas === '#ffffff' ? '#333333' : '#FFFFFF'}
+          />
+          
+          {/* Response content */}
+          <Text
+            x={16}
+            y={45}
+            text={card.response}
+            fontSize={14}
+            fontFamily="Arial"
+            fill={theme.canvas === '#ffffff' ? '#333333' : '#DDDDDD'}
+            width={card.width - 32}
+            height={card.height - 60}
+            wrap="word"
+          />
+          
+          {/* Close button */}
+          <Group
+            x={card.width - 30}
+            y={15}
+            onClick={() => {
+              setGeminiResponseCards(prev => 
+                prev.map(c => c.id === card.id ? { ...c, isVisible: false } : c)
+              );
+              // Save to history after closing
+              setTimeout(() => {
+                saveToHistory();
+              }, 0);
+            }}
+          >
+            <Rect
+              width={24}
+              height={24}
+              cornerRadius={12}
+              fill={theme.canvas === '#ffffff' ? '#f0f0f0' : '#333333'}
+            />
+            <Text
+              x={8}
+              y={2}
+              text="×"
+              fontSize={20}
+              fontFamily="Arial"
+              fill={theme.canvas === '#ffffff' ? '#666666' : '#AAAAAA'}
+            />
+          </Group>
+          
+          {/* Resize handle in bottom-right corner */}
+          <Group
+            x={card.width - 18}
+            y={card.height - 18}
+            onMouseDown={(e) => {
+              // Start resizing
+              setGeminiResponseCards(prev => 
+                prev.map(c => c.id === card.id ? { ...c, isResizing: true } : c)
+              );
+              
+              // Store the initial mouse position
+              const stage = e.target.getStage();
+              if (stage) {
+                const mousePos = stage.getPointerPosition();
+                if (mousePos) {
+                  lastPointerPosition.current = {
+                    x: mousePos.x / scale,
+                    y: mousePos.y / scale
+                  };
+                }
+              }
+            }}
+          >
+            <Line
+              points={[0, 12, 12, 0]}
+              stroke={theme.canvas === '#ffffff' ? '#999999' : '#666666'}
+              strokeWidth={1}
+            />
+            <Line
+              points={[4, 12, 12, 4]}
+              stroke={theme.canvas === '#ffffff' ? '#999999' : '#666666'}
+              strokeWidth={1}
+            />
+            <Line
+              points={[8, 12, 12, 8]}
+              stroke={theme.canvas === '#ffffff' ? '#999999' : '#666666'}
+              strokeWidth={1}
+            />
+          </Group>
+        </Group>
+      );
+    });
+  };
+
+  // Track resizing of Gemini response cards
+  useEffect(() => {
+    const handleMouseMoveResizeCard = (e: MouseEvent) => {
+      // Check if any card is being resized
+      const resizingCard = geminiResponseCards.find(card => card.isResizing);
+      if (!resizingCard || !lastPointerPosition.current) return;
+
+      // Get mouse position adjusted for scale
+      const stage = stageRef.current;
+      if (!stage) return;
+      
+      const mousePos = stage.getPointerPosition();
+      if (!mousePos) return;
+      
+      const adjustedMousePos = {
+        x: (mousePos.x - stage.x()) / scale,
+        y: (mousePos.y - stage.y()) / scale
+      };
+
+      // Calculate new dimensions based on drag distance
+      const deltaX = adjustedMousePos.x - lastPointerPosition.current.x;
+      const deltaY = adjustedMousePos.y - lastPointerPosition.current.y;
+      
+      setGeminiResponseCards(prev => 
+        prev.map(card => {
+          if (card.id === resizingCard.id) {
+            return {
+              ...card,
+              width: Math.max(200, card.width + deltaX),
+              height: Math.max(150, card.height + deltaY)
+            };
+          }
+          return card;
+        })
+      );
+      
+      // Update last pointer position
+      lastPointerPosition.current = adjustedMousePos;
+    };
+
+    const handleMouseUpResizeCard = () => {
+      // When mouse is released, stop resizing any cards
+      const resizingCard = geminiResponseCards.find(card => card.isResizing);
+      if (resizingCard) {
+        setGeminiResponseCards(prev => 
+          prev.map(card => card.id === resizingCard.id ? { ...card, isResizing: false } : card)
+        );
+        // Save to history after resizing
+        setTimeout(() => {
+          saveToHistory();
+        }, 0);
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMoveResizeCard);
+    window.addEventListener('mouseup', handleMouseUpResizeCard);
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMoveResizeCard);
+      window.removeEventListener('mouseup', handleMouseUpResizeCard);
+    };
+  }, [geminiResponseCards, scale, saveToHistory]);
 
   return (
     <div
@@ -852,6 +1154,10 @@ const Canvas = forwardRef<CanvasRef>((props, ref) => {
           {/* Layer for rendering notes */}
           <Layer>
             {renderNotes()}
+          </Layer>
+          {/* Layer for rendering Gemini response cards */}
+          <Layer>
+            {renderGeminiResponseCards()}
           </Layer>
         </Stage>
       </div>
@@ -1095,5 +1401,6 @@ export type {
   LineType,
   TextLayerType,
   NoteLayerType,
+  GeminiResponseCardType,
   HistoryState
 };

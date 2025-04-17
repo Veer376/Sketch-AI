@@ -41,9 +41,59 @@
   }
 }
 
+/* Snake-like animation that moves in clockwise direction */
+@keyframes snake-border {
+  0% {
+    background: linear-gradient(90deg, transparent, #8e2de2, #4a00e0, transparent) border-box;
+    background-size: 200% 100%;
+    background-position: 200% 0;
+    border-width: 2px 0 0 0;
+  }
+  25% {
+    background: linear-gradient(180deg, transparent, #4a00e0, #3f51b5, transparent) border-box;
+    background-size: 100% 200%;
+    background-position: 0 200%;
+    border-width: 0 2px 0 0;
+  }
+  50% {
+    background: linear-gradient(270deg, transparent, #3f51b5, #00bcd4, transparent) border-box;
+    background-size: 200% 100%;
+    background-position: -100% 0;
+    border-width: 0 0 2px 0;
+  }
+  75% {
+    background: linear-gradient(0deg, transparent, #00bcd4, #8e2de2, transparent) border-box;
+    background-size: 100% 200%;
+    background-position: 0 -100%;
+    border-width: 0 0 0 2px;
+  }
+  100% {
+    background: linear-gradient(90deg, transparent, #8e2de2, #4a00e0, transparent) border-box;
+    background-size: 200% 100%;
+    background-position: 200% 0;
+    border-width: 2px 0 0 0;
+  }
+}
+
 .animate-border-flow {
   animation: border-flow 2s ease-in-out forwards;
   background-size: 200% 200%;
+}
+
+.animate-snake-border {
+  animation: snake-border 8s linear infinite;
+  border-color: transparent;
+  border-style: solid;
+  background-origin: border-box;
+  background-clip: border-box;
+}
+
+.static-gradient-border {
+  border-color: transparent;
+  border-style: solid;
+  background-origin: border-box;
+  background-clip: border-box;
+  background-size: 100% 100%;
 }
 
 a {

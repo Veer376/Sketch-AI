@@ -68,7 +68,7 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
   onToggleZoomPanel, // Receive onToggleZoomPanel
 }) => {
   const theme = getCurrentTheme();
-  const [pencilThickness, setPencilThickness] = useState(2);
+  const [pencilThickness, setPencilThickness] = useState(3);
   const [isPencilHovered, setIsPencilHovered] = useState(false);
   const [isPencilSubToolbarHovered, setIsPencilSubToolbarHovered] = useState(false);
   const [isEraserHovered, setIsEraserHovered] = useState(false); // Add eraser hover state

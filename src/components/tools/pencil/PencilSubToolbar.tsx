@@ -17,7 +17,7 @@ const PaletteIcon = () => (
 
 export interface PencilSubToolbarProps {
   isVisible: boolean;
-  thickness?: number;
+  thickness: number;
   onThicknessChange?: (thickness: number) => void; // Only thickness needed
   onHoverChange?: (isHovered: boolean) => void;
   selectedColor: string; // Use selectedColor from parent
@@ -35,7 +35,7 @@ const CONNECTOR_SIZE = 10;
 
 const PencilSubToolbar: React.FC<PencilSubToolbarProps> = ({ 
   isVisible, 
-  thickness = 2, 
+  thickness, 
   onThicknessChange,
   onHoverChange,
   selectedColor, // Receive from parent
