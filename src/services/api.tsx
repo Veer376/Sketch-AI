@@ -2,7 +2,8 @@
  * API service for Gemini model interactions
  */
 
-const API_BASE_URL = 'http://localhost:5000'; // Default Flask server URL
+// Correctly access Vite environment variables
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 interface GeminiRequestPayload {
   prompt?: string;
@@ -35,7 +36,7 @@ export const processGeminiRequest = async (
     
     // Add image to payload if provided
     if (imageBase64) {
-      
+
       //The format of the imageBase64 is data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...
       const base64Data = imageBase64.includes('base64,') 
         ? imageBase64.split('base64,')[1] 
