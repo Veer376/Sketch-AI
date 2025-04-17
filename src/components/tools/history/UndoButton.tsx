@@ -46,7 +46,7 @@ const UndoButton: React.FC<UndoButtonProps> = ({
   const getButtonStyles = () => {
     const baseStyles: React.CSSProperties = {
       backgroundColor: theme.toolbarButton,
-      color: disabled ? theme.toolbarButtonDisabled : theme.toolbarButtonText,
+      color: theme.toolbarButtonText,
       border: 'none',
       padding: '10px',
       borderRadius: '8px',

@@ -48,7 +48,7 @@ export function Gemini({canvasRef}: GeminiButtonProps) {
         };
         
         // Add the response card to the canvas
-        const cardId = canvasRef.current.addGeminiResponseCard(result.response, position);
+        canvasRef.current.addGeminiResponseCard(result.response, position);
       } else {
         console.error("No response from Gemini API");
       }

@@ -230,9 +230,7 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
   // Add handler for NoteTool hover
   const handleNoteHoverChange = (isHovered: boolean) => {
     if (isHovered) {
-      if (noteToolRef.current) {
-        setNoteButtonY(noteToolRef.current.getBoundingClientRect().top);
-      }
+      // We removed noteButtonY state, so we don't need to set it
       if (noteHoverTimeoutRef.current !== null) clearTimeout(noteHoverTimeoutRef.current);
       noteHoverTimeoutRef.current = null;
       setIsNoteHovered(true);
@@ -358,7 +356,7 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
   }, [isDragging]);
 
   // Updated MouseUp handler to always snap to the right side
-  const handleMouseUp = useCallback((e: MouseEvent) => {
+  const handleMouseUp = useCallback(() => {
     if (!isDragging) return;
     setIsDragging(false);
     if (!toolbarRef.current) return;

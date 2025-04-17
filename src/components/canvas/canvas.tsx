@@ -925,7 +925,7 @@ const Canvas = forwardRef<CanvasRef>((_, ref) => {
 
   // Track resizing of Gemini response cards
   useEffect(() => {
-    const handleMouseMoveResizeCard = (e: MouseEvent) => {
+    const handleMouseMoveResizeCard = () => {
       // Check if any card is being resized
       const resizingCard = geminiResponseCards.find(card => card.isResizing);
       if (!resizingCard || !lastPointerPosition.current) return;
