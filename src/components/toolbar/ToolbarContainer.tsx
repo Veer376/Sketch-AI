@@ -16,7 +16,7 @@ import { bounceUIElement } from '../../utils/animation'; // Import bounce animat
 import TextTool from '../tools/text/TextTool'; // Import TextTool
 import TextSubToolbar, { TextFormattingOptions } from '../tools/text/TextSubToolbar'; // Import TextSubToolbar
 import NoteTool from '../tools/note/NoteTool'; // Import NoteTool
-import NoteSubToolbar, { NoteStyle } from '../tools/note/NoteSubToolbar'; // Import NoteSubToolbar
+import NoteSubToolbar from '../tools/note/NoteSubToolbar'; // Import NoteSubToolbar
 
 export type Tool = 'pencil' | 'eraser' | 'grid' | 'text' | 'note' | null;
 
@@ -106,7 +106,6 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
   const [pencilButtonY, setPencilButtonY] = useState(0);
   const [eraserButtonY, setEraserButtonY] = useState(0);
   const [gridButtonY, setGridButtonY] = useState(0);
-  const [noteButtonY, setNoteButtonY] = useState(0);
   
   // Add hover state for NoteTool
   const [isNoteHovered, setIsNoteHovered] = useState(false);
@@ -129,11 +128,6 @@ const ToolbarContainer: React.FC<ToolbarContainerProps> = ({
     if (onPencilOptionsChange) {
       onPencilOptionsChange({ thickness }); // Only notify about thickness
     }
-  };
-
-  const handleEraserSizeChange = (size: number) => { 
-    toolManager.updateToolOption('eraser', 'size', size); 
-    onEraserSizeChange(size); // Call the prop function passed from App
   };
   
   // Update hover handlers to measure Y position

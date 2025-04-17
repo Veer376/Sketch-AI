@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { getCurrentTheme } from '../../utils/theme';
 import DiscreteSliderControl from '../shared/DiscreteSliderControl';
-import { X } from 'lucide-react'; // Use an icon for close
-import { springAnimation } from '../../utils/animation'; // For snapping animation
 
 interface ZoomControlPanelProps {
   initialScale: number;
@@ -23,7 +21,7 @@ const ZoomControlPanel: React.FC<ZoomControlPanelProps> = ({
 }) => {
   const theme = getCurrentTheme();
   const panelRef = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(true); // Internal visibility for fade out maybe? Or just rely on parent? Let's rely on parent for now.
+  // Removing unused state
   
   // State for dragging
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -64,7 +62,7 @@ const ZoomControlPanel: React.FC<ZoomControlPanelProps> = ({
     setPosition({ x: newX, y: newY });
   }, [isDragging]);
 
-  const handleMouseUp = useCallback((e: MouseEvent) => {
+  const handleMouseUp = useCallback(() => {
     if (!isDragging) return;
     setIsDragging(false);
     
@@ -132,4 +130,4 @@ const ZoomControlPanel: React.FC<ZoomControlPanelProps> = ({
   );
 };
 
-export default ZoomControlPanel; 
+export default ZoomControlPanel;

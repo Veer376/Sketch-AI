@@ -94,7 +94,7 @@ const INITIAL_SCALE = 1;
 const INITIAL_POSITION = { x: 0, y: 0 };
 
 // Convert Canvas to forwardRef component
-const Canvas = forwardRef<CanvasRef>((props, ref) => {
+const Canvas = forwardRef<CanvasRef>((_, ref) => {
   const [lines, setLines] = useState<LineType[]>([]);
   const [textLayers, setTextLayers] = useState<TextLayerType[]>([]); // State for text layers
   const [noteLayers, setNoteLayers] = useState<NoteLayerType[]>([]); // State for note layers
@@ -112,7 +112,7 @@ const Canvas = forwardRef<CanvasRef>((props, ref) => {
   const [stagePosition, setStagePosition] = useState(INITIAL_POSITION);
   const [selectedTool, setSelectedTool] = useState<'pencil' | 'eraser' | 'grid' | 'text' | 'note' | null>(null);
   const [pencilThickness, setPencilThickness] = useState(4);
-  const [selectedColor, setSelectedColor] = useState<string>('black'); // Default color black, managed here
+  const [selectedColor, setSelectedColor] = useState<string>('red'); // Default color black, managed here
   const [gridType, setGridType] = useState<GridType>('lines');
   const [eraserSize, setEraserSize] = useState(25); // Add eraser size state here
   const [isZoomPanelVisible, setIsZoomPanelVisible] = useState(false); // State for zoom panel visibility
@@ -769,9 +769,9 @@ const Canvas = forwardRef<CanvasRef>((props, ref) => {
           width={card.width}
           height={card.height}
           draggable={selectedTool === null}
-          onDragStart={(e) => {
+          onDragStart={() => {
             // Set cursor to grabbing during drag
-            const stage = e.target.getStage();
+            const stage = stageRef.current;
             if (stage) {
               stage.container().style.cursor = 'grabbing';
             }

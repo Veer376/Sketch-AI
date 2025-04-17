@@ -22,7 +22,7 @@ const EraserTool: React.FC<EraserToolProps> = ({
   isSelected, 
   onSelect,
   onHoverChange,
-  size
+  /* size parameter is received but not used in this component */
 }) => {
   const theme = getCurrentTheme();
   const buttonRef = useRef<HTMLButtonElement>(null);

@@ -9,7 +9,6 @@ interface GeminiButtonProps {
 
 export function Gemini({canvasRef}: GeminiButtonProps) {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [activeCardId, setActiveCardId] = useState<string | null>(null);
 
   const handleClick = async () => {
     // If no canvas reference is provided, we can't process anything
@@ -50,7 +49,6 @@ export function Gemini({canvasRef}: GeminiButtonProps) {
         
         // Add the response card to the canvas
         const cardId = canvasRef.current.addGeminiResponseCard(result.response, position);
-        setActiveCardId(cardId);
       } else {
         console.error("No response from Gemini API");
       }

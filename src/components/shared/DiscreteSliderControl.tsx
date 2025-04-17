@@ -28,7 +28,7 @@ const DiscreteSliderControl: React.FC<DiscreteSliderControlProps> = ({
   width = '150px', // Default width
 }) => {
   const handleSliderChange = (
-    event: Event,
+    _: Event,
     newValue: number | number[],
   ) => {
     // MUI slider can return array for range, ensure single value
@@ -64,4 +64,4 @@ const DiscreteSliderControl: React.FC<DiscreteSliderControlProps> = ({
   );
 };
 
-export default DiscreteSliderControl; 
+export default DiscreteSliderControl;

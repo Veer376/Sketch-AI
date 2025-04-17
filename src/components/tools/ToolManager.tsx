@@ -1,4 +1,4 @@
-import { Tool } from '../Toolbar';
+import { Tool } from '../toolbar/ToolbarContainer';
 
 // Interfaces for our tool state management
 export interface ToolState {
